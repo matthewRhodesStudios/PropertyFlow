@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuoteSchema, type Quote, type InsertQuote, type Property, type Contractor } from "@shared/schema";
+import { insertQuoteSchema, type Quote, type InsertQuote, type Job, type Property, type Contractor } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,10 @@ export default function Quotes() {
 
   const { data: contractors = [] } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
+  });
+
+  const { data: jobs = [] } = useQuery<Job[]>({
+    queryKey: ["/api/jobs"],
   });
 
   const form = useForm<InsertQuote>({

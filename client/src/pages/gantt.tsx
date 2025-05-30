@@ -68,6 +68,11 @@ export default function Gantt() {
   });
 
   const onSubmit = (data: InsertTask) => {
+    // Ensure propertyId is set to a valid value
+    if (!data.propertyId && properties.length > 0) {
+      data.propertyId = properties[0].id;
+    }
+    console.log("Submitting task:", data);
     createTaskMutation.mutate(data);
   };
 
