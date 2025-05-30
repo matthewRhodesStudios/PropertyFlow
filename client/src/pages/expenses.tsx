@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
@@ -721,6 +722,26 @@ export default function Expenses() {
                   )}
                 />
               )}
+
+              <FormField
+                control={form.control}
+                name="taxDeductible"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Tax Deductible
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
 
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={addExpenseMutation.isPending || updateExpenseMutation.isPending}>
