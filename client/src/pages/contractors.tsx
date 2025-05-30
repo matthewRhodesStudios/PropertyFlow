@@ -123,10 +123,22 @@ export default function Contractors() {
   });
 
   const onSubmit = (data: InsertContractor) => {
+    // Convert rating to string if it exists, or set to null
+    const processedData = {
+      ...data,
+      rating: data.rating ? data.rating.toString() : null,
+      company: data.company || null,
+      contactPerson: data.contactPerson || null,
+      email: data.email || null,
+      phone: data.phone || null,
+      website: data.website || null,
+      notes: data.notes || null,
+    };
+
     if (editingContractor) {
-      updateMutation.mutate({ id: editingContractor.id, data });
+      updateMutation.mutate({ id: editingContractor.id, data: processedData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(processedData);
     }
   };
 
