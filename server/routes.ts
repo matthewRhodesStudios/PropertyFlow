@@ -137,10 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/quotes", async (req, res) => {
     try {
+      console.log("Quote creation request body:", req.body);
       const validatedData = insertQuoteSchema.parse(req.body);
+      console.log("Validated quote data:", validatedData);
       const quote = await storage.createQuote(validatedData);
       res.status(201).json(quote);
     } catch (error) {
+      console.error("Quote creation error:", error);
       res.status(400).json({ message: "Invalid quote data", error });
     }
   });

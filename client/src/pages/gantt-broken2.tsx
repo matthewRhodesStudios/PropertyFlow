@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, Edit2, PoundSterling, Trash2, GripVertical } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, CheckCircle, Clock, AlertCircle, Edit2, PoundSterling, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,17 +17,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertTaskSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
+import { insertTaskSchema, insertJobSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
 export default function Gantt() {
   const [expandedTasks, setExpandedTasks] = useState<Record<number, boolean>>({});
   const [newTaskOpen, setNewTaskOpen] = useState(false);
-  const [editContactOpen, setEditContactOpen] = useState(false);
+  const [newContactOpen, setNewContactOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [contactType, setContactType] = useState<'solicitor' | 'estate_agent'>('solicitor');
-  const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
 
   // Queries
   const { data: properties = [] } = useQuery({
@@ -64,22 +62,11 @@ export default function Gantt() {
     },
   });
 
-  const updateContactMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest("PATCH", `/api/contacts/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
-      setEditContactOpen(false);
-      contactForm.reset();
-      setEditingContact(null);
-    },
-  });
-
   const createContactMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/contacts", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
-      setEditContactOpen(false);
+      setNewContactOpen(false);
       contactForm.reset();
     },
   });
@@ -177,75 +164,11 @@ export default function Gantt() {
   };
 
   const onSubmitContact = (data: any) => {
-    if (editingContact) {
-      updateContactMutation.mutate({
-        id: editingContact.id,
-        data: {
-          ...data,
-          propertyId: selectedPropertyId,
-          role: contactType
-        }
-      });
-    } else {
-      createContactMutation.mutate({
-        ...data,
-        propertyId: selectedPropertyId,
-        role: contactType
-      });
-    }
-  };
-
-  const editContact = (contact: Contact, type: 'solicitor' | 'estate_agent') => {
-    setEditingContact(contact);
-    setContactType(type);
-    setSelectedPropertyId(contact.propertyId);
-    contactForm.reset({
-      name: contact.name,
-      company: contact.company || "",
-      email: contact.email || "",
-      phone: contact.phone || "",
-      address: contact.address || "",
-      notes: contact.notes || "",
-      specialization: contact.specialization || "",
+    createContactMutation.mutate({
+      ...data,
+      propertyId: selectedPropertyId,
+      role: contactType
     });
-    setEditContactOpen(true);
-  };
-
-  const addContactForProperty = (propertyId: number, type: 'solicitor' | 'estate_agent') => {
-    setEditingContact(null);
-    setContactType(type);
-    setSelectedPropertyId(propertyId);
-    contactForm.reset({
-      name: "",
-      company: "",
-      email: "",
-      phone: "",
-      address: "",
-      notes: "",
-      specialization: "",
-    });
-    setEditContactOpen(true);
-  };
-
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, taskId: number) => {
-    setDraggedTaskId(taskId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, targetTaskId: number) => {
-    e.preventDefault();
-    if (draggedTaskId && draggedTaskId !== targetTaskId) {
-      // Here you would implement the reordering logic
-      console.log(`Move task ${draggedTaskId} to position of task ${targetTaskId}`);
-      // For now, just log - you'd need to implement a reorder endpoint
-    }
-    setDraggedTaskId(null);
   };
 
   // Group tasks by property
@@ -269,11 +192,13 @@ export default function Gantt() {
       {/* Properties with Professional Contacts and Tasks */}
       {(properties as Property[]).map((property) => {
         const propertyTasks = tasksByProperty[property.id] || [];
-        const propertySolicitor = contacts.find(contact => 
-          contact.role === 'solicitor' && contact.propertyId === property.id
+        const propertySolicitors = contacts.filter(contact => 
+          contact.role === 'solicitor' && 
+          (contact.propertyId === property.id || contact.propertyId === null)
         );
-        const propertyEstateAgent = contacts.find(contact => 
-          contact.role === 'estate_agent' && contact.propertyId === property.id
+        const propertyEstateAgents = contacts.filter(contact => 
+          contact.role === 'estate_agent' && 
+          (contact.propertyId === property.id || contact.propertyId === null)
         );
 
         return (
@@ -301,75 +226,58 @@ export default function Gantt() {
             
             {/* Professional Contacts for this Property */}
             <div className="grid md:grid-cols-2 gap-4 p-6 bg-gray-50 border-b">
-              {/* Solicitor for this Property */}
+              {/* Solicitors for this Property */}
               <Card className="border border-blue-200">
                 <CardHeader className="bg-blue-50 py-3">
                   <CardTitle className="flex items-center justify-between text-sm text-blue-800">
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4" />
-                      Solicitor
+                      Solicitors
                     </div>
                     <Button 
                       size="sm" 
                       variant="outline" 
                       className="text-xs h-6"
                       onClick={() => {
-                        if (propertySolicitor) {
-                          editContact(propertySolicitor, 'solicitor');
-                        } else {
-                          addContactForProperty(property.id, 'solicitor');
-                        }
+                        setSelectedPropertyId(property.id);
+                        setContactType('solicitor');
+                        setNewContactOpen(true);
                       }}
                     >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      {propertySolicitor ? 'Edit' : 'Add'}
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
                   <div className="space-y-2">
-                    {propertySolicitor ? (
-                      <div className="p-2 bg-white rounded border text-sm">
-                        <div className="font-medium">{propertySolicitor.name}</div>
-                        {propertySolicitor.company && (
-                          <div className="text-xs text-gray-600">{propertySolicitor.company}</div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          {propertySolicitor.phone && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                    {propertySolicitors.map((solicitor) => (
+                      <div key={solicitor.id} className="flex items-center justify-between p-2 bg-white rounded border text-sm">
+                        <div>
+                          <div className="font-medium">{solicitor.name}</div>
+                          {solicitor.company && <div className="text-xs text-gray-600">{solicitor.company}</div>}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {solicitor.phone && (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <Phone className="h-3 w-3" />
-                              {propertySolicitor.phone}
-                            </div>
+                            </Button>
                           )}
-                          {propertySolicitor.email && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                          {solicitor.email && (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <Mail className="h-3 w-3" />
-                              {propertySolicitor.email}
-                            </div>
+                            </Button>
                           )}
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-2">No solicitor assigned</p>
+                    ))}
+                    {propertySolicitors.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-2">No solicitors assigned</p>
                     )}
                     
-                    {/* Legal Tasks under Solicitor */}
+                    {/* Legal Tasks under Solicitors */}
                     <div className="mt-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-medium text-gray-700">Legal Tasks:</h5>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-5 text-xs p-1"
-                          onClick={() => {
-                            taskForm.setValue('propertyId', property.id);
-                            taskForm.setValue('category', 'legal');
-                            setNewTaskOpen(true);
-                          }}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <h5 className="text-xs font-medium text-gray-700">Legal Tasks:</h5>
                       {propertyTasks.filter(task => task.category === 'legal').map((task) => (
                         <div key={task.id} className="flex items-center justify-between p-2 bg-blue-50 rounded text-xs border-l-2 border-blue-300">
                           <span>{task.title}</span>
@@ -395,75 +303,58 @@ export default function Gantt() {
                 </CardContent>
               </Card>
 
-              {/* Estate Agent for this Property */}
+              {/* Estate Agents for this Property */}
               <Card className="border border-green-200">
                 <CardHeader className="bg-green-50 py-3">
                   <CardTitle className="flex items-center justify-between text-sm text-green-800">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Estate Agent
+                      Estate Agents
                     </div>
                     <Button 
                       size="sm" 
                       variant="outline" 
                       className="text-xs h-6"
                       onClick={() => {
-                        if (propertyEstateAgent) {
-                          editContact(propertyEstateAgent, 'estate_agent');
-                        } else {
-                          addContactForProperty(property.id, 'estate_agent');
-                        }
+                        setSelectedPropertyId(property.id);
+                        setContactType('estate_agent');
+                        setNewContactOpen(true);
                       }}
                     >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      {propertyEstateAgent ? 'Edit' : 'Add'}
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
                   <div className="space-y-2">
-                    {propertyEstateAgent ? (
-                      <div className="p-2 bg-white rounded border text-sm">
-                        <div className="font-medium">{propertyEstateAgent.name}</div>
-                        {propertyEstateAgent.company && (
-                          <div className="text-xs text-gray-600">{propertyEstateAgent.company}</div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          {propertyEstateAgent.phone && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                    {propertyEstateAgents.map((agent) => (
+                      <div key={agent.id} className="flex items-center justify-between p-2 bg-white rounded border text-sm">
+                        <div>
+                          <div className="font-medium">{agent.name}</div>
+                          {agent.company && <div className="text-xs text-gray-600">{agent.company}</div>}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {agent.phone && (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <Phone className="h-3 w-3" />
-                              {propertyEstateAgent.phone}
-                            </div>
+                            </Button>
                           )}
-                          {propertyEstateAgent.email && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                          {agent.email && (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <Mail className="h-3 w-3" />
-                              {propertyEstateAgent.email}
-                            </div>
+                            </Button>
                           )}
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-2">No estate agent assigned</p>
+                    ))}
+                    {propertyEstateAgents.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-2">No estate agents assigned</p>
                     )}
                     
                     {/* Estate Agent Tasks */}
                     <div className="mt-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-medium text-gray-700">Estate Agent Tasks:</h5>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-5 text-xs p-1"
-                          onClick={() => {
-                            taskForm.setValue('propertyId', property.id);
-                            taskForm.setValue('category', 'estate_agent');
-                            setNewTaskOpen(true);
-                          }}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <h5 className="text-xs font-medium text-gray-700">Estate Agent Tasks:</h5>
                       {propertyTasks.filter(task => task.category === 'estate_agent').map((task) => (
                         <div key={task.id} className="flex items-center justify-between p-2 bg-green-50 rounded text-xs border-l-2 border-green-300">
                           <span>{task.title}</span>
@@ -504,14 +395,7 @@ export default function Gantt() {
                   const daysUntilDue = getDaysUntilDue(task.dueDate);
 
                   return (
-                    <div 
-                      key={task.id} 
-                      className="relative"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, task.id)}
-                    >
+                    <div key={task.id} className="relative">
                       {/* Timeline dot */}
                       <div className={cn(
                         "absolute left-6 w-4 h-4 rounded-full border-2 bg-white z-10",
@@ -828,13 +712,11 @@ export default function Gantt() {
         </DialogContent>
       </Dialog>
 
-      {/* Contact Edit/Create Dialog */}
-      <Dialog open={editContactOpen} onOpenChange={setEditContactOpen}>
+      {/* Contact Creation Dialog */}
+      <Dialog open={newContactOpen} onOpenChange={setNewContactOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingContact ? 'Edit' : 'Add'} {contactType === 'solicitor' ? 'Solicitor' : 'Estate Agent'}
-            </DialogTitle>
+            <DialogTitle>Add {contactType === 'solicitor' ? 'Solicitor' : 'Estate Agent'}</DialogTitle>
           </DialogHeader>
           <Form {...contactForm}>
             <form onSubmit={contactForm.handleSubmit(onSubmitContact)} className="space-y-4">
@@ -894,22 +776,8 @@ export default function Gantt() {
                 )}
               />
 
-              <FormField
-                control={contactForm.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter address..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" disabled={updateContactMutation.isPending || createContactMutation.isPending}>
-                {editingContact ? 'Update' : 'Add'} {contactType === 'solicitor' ? 'Solicitor' : 'Estate Agent'}
+              <Button type="submit" disabled={createContactMutation.isPending}>
+                Add {contactType === 'solicitor' ? 'Solicitor' : 'Estate Agent'}
               </Button>
             </form>
           </Form>
