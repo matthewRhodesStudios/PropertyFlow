@@ -160,15 +160,14 @@ export default function Expenses() {
       jobId: data.jobId ? parseInt(data.jobId) : null,
       title: data.title,
       description: data.description || null,
-      amount: parseFloat(data.amount),
+      amount: data.amount,
       category: data.category,
       paymentMethod: data.paymentMethod || null,
       supplier: data.contractorType === "existing" && data.contractorId 
         ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
         : data.customSupplier || null,
       receiptNumber: data.receiptNumber || null,
-      vatAmount: data.vatAmount ? parseFloat(data.vatAmount) : null,
-      vatRate: data.vatRate ? parseFloat(data.vatRate) : null,
+      vatAmount: data.vatAmount || null,
       date: new Date(data.date),
     };
 
@@ -552,8 +551,8 @@ export default function Expenses() {
                       const quote = quotes.find(q => q.id === parseInt(value));
                       if (quote) {
                         setSelectedQuote(quote);
-                        form.setValue("amount", quote.amount.toString());
-                        form.setValue("title", quote.name || "Quote expense");
+                        form.setValue("amount", quote.amount);
+                        form.setValue("title", quote.service || "Quote expense");
                         form.setValue("category", "Quote");
                       }
                     }} value={field.value}>
@@ -565,7 +564,7 @@ export default function Expenses() {
                       <SelectContent>
                         {quotes.map((quote) => (
                           <SelectItem key={quote.id} value={quote.id.toString()}>
-                            {quote.name} - {formatCurrency(quote.amount)}
+                            {quote.service} - {formatCurrency(quote.amount)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -586,9 +585,9 @@ export default function Expenses() {
                       <div>
                         <span className="text-blue-700">Status:</span> {selectedQuote.status}
                       </div>
-                      {selectedQuote.description && (
+                      {selectedQuote.notes && (
                         <div className="col-span-2">
-                          <span className="text-blue-700">Description:</span> {selectedQuote.description}
+                          <span className="text-blue-700">Notes:</span> {selectedQuote.notes}
                         </div>
                       )}
                     </div>
