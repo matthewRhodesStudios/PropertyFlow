@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertContractorSchema, type Contractor, type InsertContractor } from "@shared/schema";
+import { insertContractorSchema, type Contractor, type InsertContractor, type Quote, type Document, type Task, type Property } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,16 +11,36 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { formatCurrency } from "@/lib/utils";
+import { ArrowLeft, Phone, Mail, Building, Star, FileText, Receipt, Hammer } from "lucide-react";
 
 export default function Contractors() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const { data: contractors = [], isLoading } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
+  });
+
+  const { data: quotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes"],
+  });
+
+  const { data: documents = [] } = useQuery<Document[]>({
+    queryKey: ["/api/documents"],
+  });
+
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const { data: properties = [] } = useQuery<Property[]>({
+    queryKey: ["/api/properties"],
   });
 
   const form = useForm<InsertContractor>({
@@ -51,6 +71,31 @@ export default function Contractors() {
 
   const onSubmit = (data: InsertContractor) => {
     createContractorMutation.mutate(data);
+  };
+
+  // Helper functions for filtering data by contractor
+  const getContractorQuotes = (contractorId: number) => {
+    return quotes.filter(quote => quote.contractorId === contractorId);
+  };
+
+  const getContractorDocuments = (contractorId: number) => {
+    return documents.filter(doc => doc.contractorId === contractorId);
+  };
+
+  const getContractorTasks = (contractorId: number) => {
+    return tasks.filter(task => task.contractorId === contractorId);
+  };
+
+  const getPropertyName = (propertyId: number | null) => {
+    if (!propertyId) return "No property";
+    const property = properties.find(p => p.id === propertyId);
+    return property?.address || "Unknown Property";
+  };
+
+  const getTotalQuoteValue = (contractorQuotes: Quote[]) => {
+    return contractorQuotes.reduce((total, quote) => {
+      return total + (quote.amount ? parseFloat(quote.amount.toString()) : 0);
+    }, 0);
   };
 
   const getSpecialtyColor = (specialty: string) => {

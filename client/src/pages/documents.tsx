@@ -368,11 +368,26 @@ export default function Documents() {
                 </div>
                 
                 <div className="flex space-x-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => window.open(document.filePath, '_blank')}
+                  >
                     <span className="material-icons text-sm mr-1">visibility</span>
                     View
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      const link = window.document.createElement('a');
+                      link.href = document.filePath;
+                      link.download = document.name;
+                      link.click();
+                    }}
+                  >
                     <span className="material-icons text-sm mr-1">download</span>
                     Download
                   </Button>
