@@ -222,7 +222,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/jobs", async (req, res) => {
     try {
       console.log('Received job data:', req.body);
-      const validatedData = insertJobSchema.parse(req.body);
+      
+      // Convert date string to Date object if present
+      const jobData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+      };
+      
+      console.log('Processed job data:', jobData);
+      const validatedData = insertJobSchema.parse(jobData);
       console.log('Validated job data:', validatedData);
       const job = await storage.createJob(validatedData);
       res.status(201).json(job);
