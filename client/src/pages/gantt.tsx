@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -102,6 +103,7 @@ export default function Gantt() {
       description: "",
       category: "general",
       status: "not_started",
+      quotable: false,
       dueDate: undefined,
     },
   });
@@ -381,6 +383,29 @@ export default function Gantt() {
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={taskForm.control}
+                  name="quotable"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Quotable Task
+                        </FormLabel>
+                        <p className="text-sm text-gray-600">
+                          Enable quotes for this task (e.g., renovation work, contractor services)
+                        </p>
+                      </div>
                     </FormItem>
                   )}
                 />

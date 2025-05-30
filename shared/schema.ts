@@ -29,6 +29,7 @@ export const contractors = pgTable("contractors", {
 export const quotes = pgTable("quotes", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull(),
+  taskId: integer("task_id").references(() => tasks.id),
   jobId: integer("job_id"),
   contractorId: integer("contractor_id").notNull(),
   service: text("service").notNull(),
@@ -46,6 +47,7 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   category: text("category").notNull().default("general"), // renovation, legal, surveying, estate_agent, general
   status: text("status").notNull().default("not_started"), // not_started, in_progress, completed
+  quotable: boolean("quotable").notNull().default(false), // whether this task can receive quotes
   dueDate: timestamp("due_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
