@@ -15,12 +15,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContractorSchema, type InsertContractor, type Contractor, type Quote, type Task, type Document } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare } from "lucide-react";
+import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contractors() {
   const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingContractor, setEditingContractor] = useState<Contractor | null>(null);
   const { toast } = useToast();
 
   const { data: contractors = [], isLoading } = useQuery({
@@ -62,6 +63,26 @@ export default function Contractors() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertContractor> }) => 
+      apiRequest("PATCH", `/api/contractors/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      setEditingContractor(null);
+      toast({
+        title: "Success",
+        description: "Contractor updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to update contractor",
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<InsertContractor>({
     resolver: zodResolver(insertContractorSchema),
     defaultValues: {
@@ -79,7 +100,45 @@ export default function Contractors() {
   });
 
   const onSubmit = (data: InsertContractor) => {
-    createMutation.mutate(data);
+    if (editingContractor) {
+      updateMutation.mutate({ id: editingContractor.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (contractor: Contractor) => {
+    setEditingContractor(contractor);
+    form.reset({
+      name: contractor.name,
+      company: contractor.company || "",
+      contactPerson: contractor.contactPerson || "",
+      specialty: contractor.specialty,
+      email: contractor.email || "",
+      phone: contractor.phone || "",
+      website: contractor.website || "",
+      preferredContact: contractor.preferredContact || "phone",
+      rating: contractor.rating ? parseFloat(contractor.rating.toString()) : undefined,
+      notes: contractor.notes || "",
+    });
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingContractor(null);
+    form.reset({
+      name: "",
+      company: "",
+      contactPerson: "",
+      specialty: "",
+      email: "",
+      phone: "",
+      website: "",
+      preferredContact: "phone",
+      rating: undefined,
+      notes: "",
+    });
   };
 
   const formatCurrency = (amount: number) => `£${amount.toLocaleString()}`;
@@ -204,7 +263,7 @@ export default function Contractors() {
           <h1 className="text-3xl font-bold">Contractors</h1>
           <p className="text-muted-foreground">Manage your network of professional contractors</p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -213,7 +272,9 @@ export default function Contractors() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Add New Contractor</DialogTitle>
+              <DialogTitle>
+                {editingContractor ? "Edit Contractor" : "Add New Contractor"}
+              </DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -386,11 +447,15 @@ export default function Contractors() {
                   )}
                 />
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+                  <Button type="button" variant="outline" onClick={handleCloseForm}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? "Adding..." : "Add Contractor"}
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {editingContractor ? (
+                      updateMutation.isPending ? "Updating..." : "Update Contractor"
+                    ) : (
+                      createMutation.isPending ? "Adding..." : "Add Contractor"
+                    )}
                   </Button>
                 </div>
               </form>
@@ -426,15 +491,17 @@ export default function Contractors() {
                 {specialtyContractors.map((contractor) => (
                   <Card 
                     key={contractor.id} 
-                    className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setSelectedContractor(selectedContractor?.id === contractor.id ? null : contractor)}
+                    className="hover:shadow-md transition-shadow"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="material-icons text-primary">person</span>
                         </div>
-                        <div className="flex-1">
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => setSelectedContractor(selectedContractor?.id === contractor.id ? null : contractor)}
+                        >
                           <CardTitle className="text-lg">{contractor.name}</CardTitle>
                           {contractor.company && (
                             <p className="text-sm text-gray-500">{contractor.company}</p>
@@ -443,12 +510,27 @@ export default function Contractors() {
                             <p className="text-xs text-gray-400">Contact: {contractor.contactPerson}</p>
                           )}
                         </div>
-                        <div className="flex items-center">
-                          {selectedContractor?.id === contractor.id ? (
-                            <ChevronUp className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          )}
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(contractor);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <div 
+                            className="cursor-pointer"
+                            onClick={() => setSelectedContractor(selectedContractor?.id === contractor.id ? null : contractor)}
+                          >
+                            {selectedContractor?.id === contractor.id ? (
+                              <ChevronUp className="h-5 w-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
