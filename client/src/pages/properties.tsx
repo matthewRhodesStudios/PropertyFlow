@@ -105,16 +105,23 @@ export default function Properties() {
     setEditingProperty(property);
     editForm.reset({
       address: property.address,
+      city: property.city || "",
+      postcode: property.postcode || "",
       type: property.type,
       purchasePrice: property.purchasePrice,
       renovationBudget: property.renovationBudget,
-      projectedSalePrice: property.projectedSalePrice,
+      projectedSalePrice: property.projectedSalePrice || "",
       status: property.status,
       progress: property.progress,
       imageUrl: property.imageUrl || "",
       notes: property.notes || "",
     });
     setIsEditDialogOpen(true);
+  };
+
+  const showPropertyDetail = (property: Property) => {
+    setSelectedProperty(property);
+    setIsDetailDialogOpen(true);
   };
 
   const filterByStatus = (status: string) => {
@@ -171,9 +178,50 @@ export default function Properties() {
                     name="address"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
-                        <FormLabel>Address</FormLabel>
+                        <FormLabel>Street Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main Street, City" {...field} />
+                          <Input placeholder="123 Main Street" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Norwich" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="postcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Postcode</FormLabel>
+                        <FormControl>
+                          <div className="flex space-x-2">
+                            <Input placeholder="NR1 1AA" {...field} />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => field.value && toast({
+                                title: "Address Lookup",
+                                description: "Address lookup requires API credentials. Please provide postcode lookup service details.",
+                              })}
+                            >
+                              <Search className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

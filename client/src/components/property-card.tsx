@@ -6,6 +6,7 @@ import { Edit } from "lucide-react";
 interface PropertyCardProps {
   property: Property;
   onEdit?: (property: Property) => void;
+  onClick?: (property: Property) => void;
 }
 
 const statusConfig = {
@@ -15,12 +16,15 @@ const statusConfig = {
   sold: { label: "Sold", color: "bg-gray-100 text-gray-800", progressColor: "bg-gray-500" }
 };
 
-export default function PropertyCard({ property, onEdit }: PropertyCardProps) {
+export default function PropertyCard({ property, onEdit, onClick }: PropertyCardProps) {
   const investment = parseFloat(property.purchasePrice) + parseFloat(property.renovationBudget);
   const config = statusConfig[property.status as keyof typeof statusConfig] || statusConfig.planning;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div 
+      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => onClick?.(property)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3">
