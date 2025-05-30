@@ -261,6 +261,7 @@ export default function Gantt() {
       address: contact.address || "",
       notes: contact.notes || "",
       specialization: contact.specialization || "",
+      role: type,
     });
     setEditContactOpen(true);
   };
@@ -277,6 +278,7 @@ export default function Gantt() {
       address: "",
       notes: "",
       specialization: "",
+      role: type,
     });
     setEditContactOpen(true);
   };
@@ -1231,6 +1233,9 @@ export default function Gantt() {
                   </FormItem>
                 )}
               />
+
+              {/* Hidden role field */}
+              <input type="hidden" {...contactForm.register("role")} value={contactType} />
 
               <Button 
                 type="submit" 
