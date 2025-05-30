@@ -1,78 +1,65 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuoteSchema, insertJobSchema, type Quote, type InsertQuote, type Job, type InsertJob, type Property, type Contractor } from "@shared/schema";
+import { Plus, PoundSterling, Edit2, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { insertQuoteSchema, type Quote, type Property, type Contractor, type Task } from "@shared/schema";
+import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency, formatCurrencyInput } from "@/lib/utils";
 
 export default function Quotes() {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedTrade, setSelectedTrade] = useState<string>("all");
-  const [isCreatingNewJob, setIsCreatingNewJob] = useState(false);
-  const [newJobName, setNewJobName] = useState("");
+  const [newQuoteOpen, setNewQuoteOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: quotes = [], isLoading } = useQuery<Quote[]>({
-    queryKey: ["/api/quotes"],
-  });
-
+  // Queries
   const { data: properties = [] } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
+  });
+
+  const { data: quotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes"],
   });
 
   const { data: contractors = [] } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
   });
 
-  const { data: jobs = [] } = useQuery<Job[]>({
-    queryKey: ["/api/jobs"],
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
   });
 
-  const form = useForm<InsertQuote>({
-    resolver: zodResolver(insertQuoteSchema),
-    defaultValues: {
-      propertyId: 0,
-      contractorId: 0,
-      service: "",
-      amount: "0",
-      status: "pending",
-      notes: "",
-    },
-  });
+  // Filter to only show quotable tasks
+  const quotableTasks = tasks.filter(task => task.quotable);
 
+  // Mutations
   const createQuoteMutation = useMutation({
-    mutationFn: (data: InsertQuote) => apiRequest("POST", "/api/quotes", data),
+    mutationFn: (data: any) => apiRequest("POST", "/api/quotes", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
-      setIsAddDialogOpen(false);
+      setNewQuoteOpen(false);
       form.reset();
-      toast({ title: "Quote added successfully" });
-    },
-    onError: () => {
-      toast({ title: "Failed to add quote", variant: "destructive" });
+      toast({ title: "Quote created successfully" });
     },
   });
 
-  const updateQuoteMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<InsertQuote> }) => 
-      apiRequest("PATCH", `/api/quotes/${id}`, data),
+  const updateQuoteStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      apiRequest("PATCH", `/api/quotes/${id}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
-      toast({ title: "Quote updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Failed to update quote", variant: "destructive" });
+      toast({ title: "Quote status updated" });
     },
   });
 
@@ -80,135 +67,97 @@ export default function Quotes() {
     mutationFn: (id: number) => apiRequest("DELETE", `/api/quotes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
-      queryClient.refetchQueries({ queryKey: ["/api/quotes"] });
       toast({ title: "Quote deleted successfully" });
     },
-    onError: () => {
-      toast({ title: "Failed to delete quote", variant: "destructive" });
+  });
+
+  // Form
+  const form = useForm({
+    resolver: zodResolver(insertQuoteSchema),
+    defaultValues: {
+      propertyId: 1,
+      taskId: undefined,
+      contractorId: 1,
+      service: "",
+      amount: "",
+      status: "pending",
+      notes: "",
+      validUntil: undefined,
     },
   });
 
-  const createJobMutation = useMutation({
-    mutationFn: (data: InsertJob) => apiRequest("POST", "/api/jobs", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      toast({ title: "Job created successfully" });
-    },
-    onError: () => {
-      toast({ title: "Failed to create job", variant: "destructive" });
-    },
-  });
-
-  const onSubmit = async (data: InsertQuote) => {
+  const onSubmit = (data: any) => {
     // Ensure amount is not empty
     if (!data.amount || data.amount.trim() === '') {
       data.amount = '0';
     }
-    
-    // If creating a new job, create it first
-    if (isCreatingNewJob && newJobName.trim()) {
-      try {
-        const response = await createJobMutation.mutateAsync({
-          name: newJobName.trim(),
-          propertyId: data.propertyId,
-          status: "planning",
-          description: `Job created for quote: ${data.service}`
-        });
-        const newJob = response as unknown as Job;
-        data.jobId = newJob.id;
-        setIsCreatingNewJob(false);
-        setNewJobName("");
-      } catch (error) {
-        toast({ title: "Failed to create job", variant: "destructive" });
-        return;
-      }
-    }
-    
     createQuoteMutation.mutate(data);
   };
 
   const handleStatusChange = (quoteId: number, newStatus: string) => {
-    updateQuoteMutation.mutate({ id: quoteId, data: { status: newStatus } });
+    updateQuoteStatusMutation.mutate({ id: quoteId, status: newStatus });
   };
 
-  const getPropertyAddress = (propertyId: number) => {
-    const property = properties.find(p => p.id === propertyId);
-    return property?.address || "Unknown Property";
-  };
-
-  const getContractorName = (contractorId: number) => {
-    const contractor = contractors.find(c => c.id === contractorId);
-    return contractor?.name || "Unknown Contractor";
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
   };
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      accepted: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    switch (status) {
+      case 'accepted':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    }
   };
 
-  // Get unique trades from contractors
-  const uniqueTrades = Array.from(new Set(contractors.map(c => c.specialty)));
-  
-  const filteredQuotes = quotes.filter(quote => {
-    const statusMatch = selectedStatus === "all" || quote.status === selectedStatus;
-    const tradeMatch = selectedTrade === "all" || (() => {
-      const contractor = contractors.find(c => c.id === quote.contractorId);
-      return contractor?.specialty === selectedTrade;
-    })();
-    return statusMatch && tradeMatch;
-  });
+  const getTaskForQuote = (quote: Quote) => {
+    return tasks.find(task => task.id === quote.taskId);
+  };
 
-  const statusOptions = ["all", "pending", "accepted", "rejected"];
+  const getPropertyForQuote = (quote: Quote) => {
+    return properties.find(property => property.id === quote.propertyId);
+  };
 
-  // Group quotes by property for comparison
+  const getContractorForQuote = (quote: Quote) => {
+    return contractors.find(contractor => contractor.id === quote.contractorId);
+  };
+
+  // Group quotes by property
   const quotesByProperty = quotes.reduce((acc, quote) => {
-    const propertyId = quote.propertyId;
-    if (!acc[propertyId]) acc[propertyId] = [];
-    acc[propertyId].push(quote);
+    if (!acc[quote.propertyId]) {
+      acc[quote.propertyId] = [];
+    }
+    acc[quote.propertyId].push(quote);
     return acc;
   }, {} as Record<number, Quote[]>);
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Quotes</h1>
-          <div className="w-32 h-10 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded mb-4"></div>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded"></div>
-                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Quotes</h1>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Quotes & Estimates</h1>
+          <p className="text-gray-600 mt-1">Manage contractor quotes for quotable tasks</p>
+        </div>
+        <Dialog open={newQuoteOpen} onOpenChange={setNewQuoteOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary-dark">
-              <span className="material-icons mr-2">request_quote</span>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
               Add Quote
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Add New Quote</DialogTitle>
+              <DialogTitle>Create New Quote</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -219,7 +168,7 @@ export default function Quotes() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Property</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select property" />
@@ -240,11 +189,40 @@ export default function Quotes() {
 
                   <FormField
                     control={form.control}
+                    name="taskId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Task Category</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select quotable task" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {quotableTasks
+                              .filter(task => !form.watch("propertyId") || task.propertyId === form.watch("propertyId"))
+                              .map((task) => (
+                              <SelectItem key={task.id} value={task.id.toString()}>
+                                {task.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
                     name="contractorId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contractor</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select contractor" />
@@ -253,7 +231,7 @@ export default function Quotes() {
                           <SelectContent>
                             {contractors.map((contractor) => (
                               <SelectItem key={contractor.id} value={contractor.id.toString()}>
-                                {contractor.name} - {contractor.specialty}
+                                {contractor.name} - {contractor.company}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -265,153 +243,12 @@ export default function Quotes() {
 
                   <FormField
                     control={form.control}
-                    name="service"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Service</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Kitchen renovation" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="jobId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Project/Job</FormLabel>
-                        <div className="space-y-2">
-                          {!isCreatingNewJob ? (
-                            <div className="flex space-x-2">
-                              <Select onValueChange={(value) => {
-                                if (value === "create-new") {
-                                  setIsCreatingNewJob(true);
-                                  field.onChange(null);
-                                } else {
-                                  field.onChange(value ? parseInt(value) : null);
-                                }
-                              }}>
-                                <FormControl>
-                                  <SelectTrigger className="flex-1">
-                                    <SelectValue placeholder="Select existing or create new project" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="create-new">
-                                    <div className="flex items-center">
-                                      <span className="material-icons text-sm mr-2">add</span>
-                                      Create New Project
-                                    </div>
-                                  </SelectItem>
-                                  {jobs.map((job) => (
-                                    <SelectItem key={job.id} value={job.id.toString()}>
-                                      {job.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          ) : (
-                            <div className="flex space-x-2">
-                              <Input
-                                placeholder="Enter new project name (e.g. Kitchen Renovation)"
-                                value={newJobName}
-                                onChange={(e) => setNewJobName(e.target.value)}
-                                className="flex-1"
-                              />
-                              <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => {
-                                  setIsCreatingNewJob(false);
-                                  setNewJobName("");
-                                }}
-                              >
-                                <span className="material-icons text-sm">close</span>
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount</FormLabel>
+                        <FormLabel>Amount (£)</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="£15,000"
-                            value={field.value ? formatCurrencyInput(field.value) : ''}
-                            onChange={(e) => {
-                              const numericValue = e.target.value.replace(/[^\d.]/g, '');
-                              field.onChange(numericValue || '');
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="accepted">Accepted</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="validUntil"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Valid Until (optional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="date" 
-                            {...field}
-                            value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Notes (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Additional notes about the quote..." {...field} value={field.value || ""} />
+                          <Input placeholder="0.00" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -419,12 +256,79 @@ export default function Quotes() {
                   />
                 </div>
 
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <FormField
+                  control={form.control}
+                  name="service"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Service Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Complete kitchen renovation, Roof repair" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="validUntil"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Valid Until</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Select expiry date</span>
+                              )}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Additional notes about the quote..." {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setNewQuoteOpen(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={createQuoteMutation.isPending}>
-                    {createQuoteMutation.isPending ? "Adding..." : "Add Quote"}
+                    Create Quote
                   </Button>
                 </div>
               </form>
@@ -433,135 +337,179 @@ export default function Quotes() {
         </Dialog>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-        {statusOptions.map((status) => (
-          <button
-            key={status}
-            onClick={() => setSelectedStatus(status)}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              selectedStatus === status
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {filteredQuotes.length === 0 ? (
+      {quotableTasks.length === 0 && (
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <span className="material-icons text-gray-400 text-6xl mb-4">request_quote</span>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {selectedStatus === "all" ? "No quotes yet" : `No ${selectedStatus} quotes`}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                Start collecting and comparing quotes from contractors for your projects.
-              </p>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary-dark">
-                <span className="material-icons mr-2">request_quote</span>
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-500">
+              <PoundSterling className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No Quotable Tasks Found</h3>
+              <p className="mb-4">You need to create tasks and mark them as "quotable" before you can add quotes.</p>
+              <p className="text-sm">Go to the Project Timeline page and create tasks with the "Quotable Task" checkbox enabled.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {Object.entries(quotesByProperty).map(([propertyId, propertyQuotes]) => {
+        const property = properties.find(p => p.id === parseInt(propertyId));
+        if (!property) return null;
+
+        return (
+          <Card key={propertyId} className="border-2">
+            <CardHeader className="bg-gray-50">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{property.address}</span>
+                  <Badge variant="outline" className="border-2">{property.type}</Badge>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {propertyQuotes.length} quote{propertyQuotes.length !== 1 ? 's' : ''}
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="space-y-4 p-6">
+                {propertyQuotes.map((quote) => {
+                  const task = getTaskForQuote(quote);
+                  const contractor = getContractorForQuote(quote);
+
+                  return (
+                    <div key={quote.id} className={cn(
+                      "p-4 rounded-lg border-2",
+                      getStatusColor(quote.status)
+                    )}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            {getStatusIcon(quote.status)}
+                            <h3 className="font-semibold text-lg">{quote.service}</h3>
+                            <Badge className={getStatusColor(quote.status)}>
+                              {quote.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Task:</span>
+                              <span>{task?.title || 'Unknown Task'}</span>
+                              {task && (
+                                <Badge variant="outline" className="text-xs">
+                                  {task.category.replace('_', ' ')}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Contractor:</span>
+                              <span>{contractor?.name} - {contractor?.company}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Received:</span>
+                              <span>{format(new Date(quote.dateReceived), "PPP")}</span>
+                            </div>
+                            
+                            {quote.validUntil && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">Valid Until:</span>
+                                <span className={cn(
+                                  new Date(quote.validUntil) < new Date() ? 'text-red-600 font-medium' : ''
+                                )}>
+                                  {format(new Date(quote.validUntil), "PPP")}
+                                  {new Date(quote.validUntil) < new Date() && ' (Expired)'}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {quote.notes && (
+                              <div className="mt-2">
+                                <span className="font-medium">Notes:</span>
+                                <p className="text-gray-600 mt-1">{quote.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col items-end gap-3">
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-green-600">
+                              £{formatCurrency(quote.amount)}
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            {quote.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-green-500 text-green-600 hover:bg-green-50"
+                                  onClick={() => handleStatusChange(quote.id, 'accepted')}
+                                >
+                                  Accept
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-500 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleStatusChange(quote.id, 'rejected')}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            
+                            {quote.status !== 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusChange(quote.id, 'pending')}
+                              >
+                                Reset to Pending
+                              </Button>
+                            )}
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500 text-red-600 hover:bg-red-50"
+                              onClick={() => deleteQuoteMutation.mutate(quote.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {propertyQuotes.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No quotes for this property yet</p>
+                    <p className="text-sm">Add quotes for quotable tasks to get started</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      {quotes.length === 0 && quotableTasks.length > 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-500">
+              <PoundSterling className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No Quotes Yet</h3>
+              <p className="mb-4">Get started by adding quotes for your quotable tasks.</p>
+              <Button onClick={() => setNewQuoteOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
                 Add Your First Quote
               </Button>
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredQuotes.map((quote) => (
-            <Card key={quote.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-roboto-mono">
-                      {formatCurrency(quote.amount)}
-                    </CardTitle>
-                    <p className="text-sm text-gray-600 mt-1">{quote.service}</p>
-                  </div>
-                  <Badge className={getStatusColor(quote.status)}>
-                    {quote.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="material-icons text-sm mr-2">business</span>
-                    <span className="truncate">{getPropertyAddress(quote.propertyId)}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="material-icons text-sm mr-2">person</span>
-                    <span className="truncate">{getContractorName(quote.contractorId)}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <span className="material-icons text-sm mr-2">schedule</span>
-                    <span>Received: {new Date(quote.dateReceived).toLocaleDateString()}</span>
-                  </div>
-
-                  {quote.validUntil && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="material-icons text-sm mr-2">event</span>
-                      <span>Valid until: {new Date(quote.validUntil).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  
-                  {quote.notes && (
-                    <p className="text-sm text-gray-500 border-t pt-2">
-                      {quote.notes}
-                    </p>
-                  )}
-                </div>
-                
-                {quote.status === "pending" && (
-                  <div className="flex space-x-2 mt-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 text-green-600 hover:text-green-700"
-                      onClick={() => handleStatusChange(quote.id, "accepted")}
-                      disabled={updateQuoteMutation.isPending}
-                    >
-                      <span className="material-icons text-sm mr-1">check</span>
-                      Accept
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 text-red-600 hover:text-red-700"
-                      onClick={() => handleStatusChange(quote.id, "rejected")}
-                      disabled={updateQuoteMutation.isPending}
-                    >
-                      <span className="material-icons text-sm mr-1">close</span>
-                      Reject
-                    </Button>
-                  </div>
-                )}
-                
-                {/* Delete button - always visible */}
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this quote?")) {
-                        deleteQuoteMutation.mutate(quote.id);
-                      }
-                    }}
-                    disabled={deleteQuoteMutation.isPending}
-                  >
-                    <span className="material-icons text-sm mr-1">delete</span>
-                    Delete Quote
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   );

@@ -214,6 +214,7 @@ export default function Gantt() {
       description: task.description || "",
       category: task.category,
       status: task.status,
+      quotable: task.quotable || false,
       dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
     });
     setEditTaskOpen(true);
