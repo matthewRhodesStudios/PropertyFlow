@@ -350,7 +350,26 @@ export default function Contractors() {
           <h1 className="text-3xl font-bold">Contractors</h1>
           <p className="text-muted-foreground">Manage your network of professional contractors</p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={handleCloseForm}>
+        <Dialog open={isFormOpen} onOpenChange={(open) => {
+          if (open) {
+            setIsFormOpen(true);
+            setEditingContractor(null);
+            form.reset({
+              name: "",
+              company: "",
+              contactPerson: "",
+              specialty: "",
+              email: "",
+              phone: "",
+              website: "",
+              preferredContact: "phone",
+              rating: undefined,
+              notes: "",
+            });
+          } else {
+            handleCloseForm();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
