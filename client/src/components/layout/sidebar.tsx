@@ -10,6 +10,7 @@ export default function Sidebar() {
     { name: "Documents", href: "/documents", icon: "folder" },
     { name: "Quotes", href: "/quotes", icon: "request_quote" },
     { name: "Timeline", href: "/gantt", icon: "timeline" },
+    { name: "Expenses", href: "/expenses", icon: "receipt" },
     { name: "Reports", href: "/reports", icon: "assessment" },
   ];
 
