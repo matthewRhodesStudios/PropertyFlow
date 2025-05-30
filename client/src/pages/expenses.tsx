@@ -163,14 +163,14 @@ export default function Expenses() {
       jobId: data.jobId ? parseInt(data.jobId) : null,
       title: data.title,
       description: data.description || null,
-      amount: parseFloat(data.amount),
+      amount: data.amount,
       category: data.category,
       paymentMethod: data.paymentMethod || null,
       supplier: data.contractorType === "existing" && data.contractorId 
         ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
         : data.customSupplier || null,
       receiptNumber: data.receiptNumber || null,
-      vatAmount: data.vatAmount ? parseFloat(data.vatAmount) : null,
+      vatAmount: data.vatAmount || null,
       date: new Date(data.date),
     };
     
