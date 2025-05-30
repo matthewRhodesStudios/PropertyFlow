@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertTaskSchema, insertJobSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
+import { insertTaskSchema, insertJobSchema, insertContactSchema, insertEventSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote, type Event } from "@shared/schema";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export default function Gantt() {
@@ -33,6 +33,8 @@ export default function Gantt() {
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [newEventOpen, setNewEventOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [contactType, setContactType] = useState<'solicitor' | 'estate_agent'>('solicitor');
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -61,6 +63,10 @@ export default function Gantt() {
 
   const { data: quotes = [] } = useQuery<Quote[]>({
     queryKey: ["/api/quotes"],
+  });
+
+  const { data: events = [] } = useQuery<Event[]>({
+    queryKey: ["/api/events"],
   });
 
   // Mutations
@@ -105,6 +111,24 @@ export default function Gantt() {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       setEditContactOpen(false);
       contactForm.reset();
+    },
+  });
+
+  const createEventMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/events", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setNewEventOpen(false);
+      setEditingEvent(null);
+    },
+  });
+
+  const updateEventMutation = useMutation({
+    mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/events/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setNewEventOpen(false);
+      setEditingEvent(null);
     },
   });
 
