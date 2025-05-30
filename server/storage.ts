@@ -1,5 +1,5 @@
 import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq } from "drizzle-orm";
 import { properties, contractors, quotes, jobs, tasks, documents, contacts } from "@shared/schema";
 
@@ -153,8 +153,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: number): Promise<boolean> {
     try {
-      await db.delete(quotes).where(eq(quotes.id, id));
-      return true;
+      const client = await pool.connect();
+      try {
+        const result = await client.query('DELETE FROM quotes WHERE id = $1', [id]);
+        return (result.rowCount || 0) > 0;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error(`Error deleting quote ${id}:`, error);
       return false;
