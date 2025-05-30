@@ -48,16 +48,20 @@ export default function Contractors() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertContractor) => apiRequest("POST", "/api/contractors", data),
+    mutationFn: (data: InsertContractor) => {
+      console.log("Creating contractor with data:", data);
+      return apiRequest("POST", "/api/contractors", data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
-      setIsFormOpen(false);
+      handleCloseForm();
       toast({
         title: "Success",
         description: "Contractor added successfully",
       });
     },
     onError: (error: any) => {
+      console.error("Create contractor error:", error);
       toast({
         title: "Error", 
         description: error.message || "Failed to add contractor",
@@ -123,17 +127,23 @@ export default function Contractors() {
   });
 
   const onSubmit = (data: InsertContractor) => {
-    // Convert rating to string if it exists, or set to null
+    console.log("Form submitted with data:", data);
+    
+    // Clean up the data - convert empty strings to null
     const processedData = {
-      ...data,
-      rating: data.rating ? data.rating.toString() : null,
+      name: data.name,
       company: data.company || null,
       contactPerson: data.contactPerson || null,
+      specialty: data.specialty,
       email: data.email || null,
       phone: data.phone || null,
       website: data.website || null,
+      preferredContact: data.preferredContact || "phone",
+      rating: data.rating ? data.rating.toString() : null,
       notes: data.notes || null,
     };
+
+    console.log("Processed data:", processedData);
 
     if (editingContractor) {
       updateMutation.mutate({ id: editingContractor.id, data: processedData });
@@ -634,7 +644,7 @@ export default function Contractors() {
                 {specialtyContractors.map((contractor) => (
                   <Card 
                     key={contractor.id} 
-                    className="hover:shadow-md transition-shadow"
+                    className="ml-4 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center space-x-3">
