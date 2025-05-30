@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import type { Property, Task, Quote, Contractor } from "@shared/schema";
 import StatsGrid from "@/components/stats-grid";
 import PropertyCard from "@/components/property-card";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
+  
   const { data: properties = [], isLoading: propertiesLoading } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
   });
@@ -210,7 +214,7 @@ export default function Dashboard() {
                           <p className="text-xs text-gray-500">{quote.service}</p>
                         </div>
                         <p className="text-sm font-medium text-gray-900 font-roboto-mono">
-                          ${parseFloat(quote.amount).toLocaleString()}
+                          {formatCurrency(parseFloat(quote.amount))}
                         </p>
                       </div>
                       <p className={`text-xs mt-1 ${
@@ -247,21 +251,33 @@ export default function Dashboard() {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setLocation("/properties")}
+              className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <span className="material-icons text-primary text-2xl mb-2">add_business</span>
               <span className="text-sm font-medium text-gray-900">Add Property</span>
             </button>
-            <button className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setLocation("/contractors")}
+              className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <span className="material-icons text-primary text-2xl mb-2">person_add</span>
               <span className="text-sm font-medium text-gray-900">Add Contractor</span>
             </button>
-            <button className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setLocation("/documents")}
+              className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <span className="material-icons text-primary text-2xl mb-2">upload_file</span>
               <span className="text-sm font-medium text-gray-900">Upload Document</span>
             </button>
-            <button className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => setLocation("/reports")}
+              className="flex flex-col items-center p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
               <span className="material-icons text-primary text-2xl mb-2">assessment</span>
-              <span className="text-sm font-medium text-gray-900">Generate Report</span>
+              <span className="text-sm font-medium text-gray-900">View Reports</span>
             </button>
           </div>
         </div>

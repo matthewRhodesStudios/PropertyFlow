@@ -13,10 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Quotes() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedTrade, setSelectedTrade] = useState<string>("all");
   const { toast } = useToast();
 
   const { data: quotes = [], isLoading } = useQuery<Quote[]>({
@@ -95,9 +97,17 @@ export default function Quotes() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const filteredQuotes = selectedStatus === "all" 
-    ? quotes 
-    : quotes.filter(quote => quote.status === selectedStatus);
+  // Get unique trades from contractors
+  const uniqueTrades = [...new Set(contractors.map(c => c.specialty))];
+  
+  const filteredQuotes = quotes.filter(quote => {
+    const statusMatch = selectedStatus === "all" || quote.status === selectedStatus;
+    const tradeMatch = selectedTrade === "all" || (() => {
+      const contractor = contractors.find(c => c.id === quote.contractorId);
+      return contractor?.specialty === selectedTrade;
+    })();
+    return statusMatch && tradeMatch;
+  });
 
   const statusOptions = ["all", "pending", "accepted", "rejected"];
 
