@@ -437,21 +437,28 @@ export default function Contractors() {
                       <FormItem>
                         <FormLabel>Specialty</FormLabel>
                         {!showCustomSpecialty ? (
-                          <Select onValueChange={handleSpecialtyChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select specialty" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {getExistingSpecialties().map((specialty) => (
-                                <SelectItem key={specialty} value={specialty}>
-                                  {specialty}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="custom">+ Add Custom Specialty</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div>
+                            <Select onValueChange={handleSpecialtyChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select specialty" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {getExistingSpecialties().map((specialty) => (
+                                  <SelectItem key={specialty} value={specialty}>
+                                    {specialty}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="custom">+ Add Custom Specialty</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {field.value && !getExistingSpecialties().includes(field.value) && (
+                              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                                Custom specialty set: "{field.value}"
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div className="flex gap-2">
                             <Input
