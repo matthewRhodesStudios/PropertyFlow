@@ -854,104 +854,103 @@ export default function Gantt() {
                           "ml-8 sm:ml-16 p-4 sm:p-6 border-b border-gray-100",
                           isTaskFullyCompleted(task) ? "bg-green-50 border-green-200" : ""
                         )}>
-                          <CollapsibleTrigger className="w-full">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                <div className="flex items-center gap-2">
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                                  ) : (
-                                    <ChevronRight className="h-5 w-5 text-gray-500" />
-                                  )}
-                                  <h3 className="text-base sm:text-lg font-semibold">{task.title}</h3>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Badge className={getCategoryColor(task.category)}>
-                                    {task.category.replace('_', ' ')}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+                            <CollapsibleTrigger className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 text-left">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                                )}
+                                <h3 className="text-base sm:text-lg font-semibold">{task.title}</h3>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge className={getCategoryColor(task.category)}>
+                                  {task.category.replace('_', ' ')}
+                                </Badge>
+                                <Badge className={getStatusColor(task.status)}>
+                                  {task.status.replace('_', ' ')}
+                                </Badge>
+                                {getRelativeDateDescription(task) && (
+                                  <Badge className="bg-blue-100 text-blue-800">
+                                    {getRelativeDateDescription(task)}
                                   </Badge>
-                                  <Badge className={getStatusColor(task.status)}>
-                                    {task.status.replace('_', ' ')}
-                                  </Badge>
-                                  {getRelativeDateDescription(task) && (
-                                    <Badge className="bg-blue-100 text-blue-800">
-                                      {getRelativeDateDescription(task)}
-                                    </Badge>
-                                  )}
-                                  {task.dueDate && (
-                                    <div className={cn(
-                                      "flex items-center gap-1 text-xs sm:text-sm px-2 py-1 rounded",
-                                      daysUntilDue && daysUntilDue < 0 ? 'bg-red-100 text-red-800' :
-                                      daysUntilDue && daysUntilDue <= 7 ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-gray-100 text-gray-600'
-                                    )}>
-                                      <Calendar className="h-3 w-3" />
-                                      <span className="hidden sm:inline">
-                                        {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} days overdue` :
-                                         daysUntilDue === 0 ? 'Due today' :
-                                         daysUntilDue === 1 ? 'Due tomorrow' :
-                                         `${daysUntilDue} days left`}
-                                      </span>
-                                      <span className="sm:hidden">
-                                        {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` :
-                                         daysUntilDue === 0 ? 'Today' :
-                                         daysUntilDue === 1 ? 'Tomorrow' :
-                                         `${daysUntilDue}d left`}
-                                      </span>
-                                    </div>
-                                  )}
+                                )}
+                                {task.dueDate && (
+                                  <div className={cn(
+                                    "flex items-center gap-1 text-xs sm:text-sm px-2 py-1 rounded",
+                                    daysUntilDue && daysUntilDue < 0 ? 'bg-red-100 text-red-800' :
+                                    daysUntilDue && daysUntilDue <= 7 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-600'
+                                  )}>
+                                    <Calendar className="h-3 w-3" />
+                                    <span className="hidden sm:inline">
+                                      {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} days overdue` :
+                                       daysUntilDue === 0 ? 'Due today' :
+                                       daysUntilDue === 1 ? 'Due tomorrow' :
+                                       `${daysUntilDue} days left`}
+                                    </span>
+                                    <span className="sm:hidden">
+                                      {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` :
+                                       daysUntilDue === 0 ? 'Today' :
+                                       daysUntilDue === 1 ? 'Tomorrow' :
+                                       `${daysUntilDue}d left`}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </CollapsibleTrigger>
+                            
+                            <div className="flex items-center gap-4 self-start sm:self-center">
+                              <div className="text-left sm:text-right">
+                                <div className="text-sm font-medium">{progress}% Complete</div>
+                                <div className="text-xs text-gray-500">
+                                  {taskJobs.filter(j => j.status === 'completed').length}/{taskJobs.length} jobs
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4 self-start sm:self-center">
-                                <div className="text-left sm:text-right">
-                                  <div className="text-sm font-medium">{progress}% Complete</div>
-                                  <div className="text-xs text-gray-500">
-                                    {taskJobs.filter(j => j.status === 'completed').length}/{taskJobs.length} jobs
-                                  </div>
-                                </div>
-                                <div className="w-20 h-2 bg-gray-200 rounded-full">
-                                  <div 
-                                    className="h-2 bg-blue-500 rounded-full transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
-                                  ></div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="cursor-grab active:cursor-grabbing hover:bg-gray-100"
-                                    title="Drag to reorder"
-                                  >
-                                    <GripVertical className="h-4 w-4 text-gray-400" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startEditTask(task);
-                                    }}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (confirm(`Are you sure you want to delete the task "${task.title}"? This will also delete all associated jobs and cannot be undone.`)) {
-                                        deleteTaskMutation.mutate(task.id);
-                                      }
-                                    }}
-                                    disabled={deleteTaskMutation.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                              <div className="w-20 h-2 bg-gray-200 rounded-full">
+                                <div 
+                                  className="h-2 bg-blue-500 rounded-full transition-all duration-300"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="cursor-grab active:cursor-grabbing hover:bg-gray-100 p-1 sm:p-2"
+                                  title="Drag to reorder"
+                                >
+                                  <GripVertical className="h-4 w-4 text-gray-400" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 sm:p-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditTask(task);
+                                  }}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 sm:p-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Are you sure you want to delete the task "${task.title}"? This will also delete all associated jobs and cannot be undone.`)) {
+                                      deleteTaskMutation.mutate(task.id);
+                                    }
+                                  }}
+                                  disabled={deleteTaskMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                          </CollapsibleTrigger>
+                          </div>
 
                           <CollapsibleContent>
                             <div className="mt-6 space-y-4">
