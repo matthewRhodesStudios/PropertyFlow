@@ -1849,19 +1849,7 @@ export default function Gantt() {
                 />
               </div>
 
-              <FormField
-                control={jobForm.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Additional notes..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setEditJobOpen(false)}>
