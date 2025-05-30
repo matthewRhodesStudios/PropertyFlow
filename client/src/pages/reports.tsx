@@ -78,7 +78,7 @@ export default function Reports() {
       };
     }).filter(item => item.totalQuotes > 0).sort((a, b) => b.acceptanceRate - a.acceptanceRate);
 
-    return contractorQuotesList.slice(0, 5);
+    return contractorQuotes.slice(0, 5);
   };
 
   // Calculate task completion metrics

@@ -225,7 +225,7 @@ export default function Gantt() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">No one assigned</SelectItem>
+                              <SelectItem value="unassigned">No one assigned</SelectItem>
                               {contractors.map((contractor) => (
                                 <SelectItem key={contractor.id} value={contractor.name}>
                                   {contractor.name} - {contractor.specialty}

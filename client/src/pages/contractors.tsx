@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function Contractors() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: contractors = [], isLoading } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
@@ -308,11 +310,27 @@ export default function Contractors() {
                 </div>
                 
                 <div className="flex space-x-2 mt-4">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => setLocation("/quotes")}
+                  >
                     <span className="material-icons text-sm mr-1">request_quote</span>
                     Quote
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      if (contractor.email) {
+                        window.open(`mailto:${contractor.email}`, '_blank');
+                      } else if (contractor.phone) {
+                        window.open(`tel:${contractor.phone}`, '_blank');
+                      }
+                    }}
+                  >
                     <span className="material-icons text-sm mr-1">contact_phone</span>
                     Contact
                   </Button>
