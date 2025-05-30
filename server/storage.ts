@@ -155,8 +155,12 @@ export class DatabaseStorage implements IStorage {
     try {
       const client = await pool.connect();
       try {
+        console.log(`Attempting to delete quote with ID: ${id}`);
         const result = await client.query('DELETE FROM quotes WHERE id = $1', [id]);
-        return (result.rowCount || 0) > 0;
+        console.log(`Delete result:`, result.rowCount);
+        const wasDeleted = (result.rowCount || 0) > 0;
+        console.log(`Quote ${id} deleted successfully: ${wasDeleted}`);
+        return wasDeleted;
       } finally {
         client.release();
       }
