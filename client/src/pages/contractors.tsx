@@ -25,6 +25,7 @@ export default function Contractors() {
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
   const [removedSpecialties, setRemovedSpecialties] = useState<string[]>([]);
+  const [temporarySpecialties, setTemporarySpecialties] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
 
@@ -201,8 +202,16 @@ export default function Contractors() {
     const existingSpecialties = new Set(contractors.map((c: any) => c.specialty).filter(Boolean));
     const allSpecialties = [...defaultSpecialties];
     
+    // Add specialties from existing contractors
     existingSpecialties.forEach(specialty => {
       if (!defaultSpecialties.includes(specialty) && !removedSpecialties.includes(specialty)) {
+        allSpecialties.push(specialty);
+      }
+    });
+    
+    // Add temporary specialties (newly added custom ones)
+    temporarySpecialties.forEach(specialty => {
+      if (!allSpecialties.includes(specialty) && !removedSpecialties.includes(specialty)) {
         allSpecialties.push(specialty);
       }
     });
@@ -234,9 +243,22 @@ export default function Contractors() {
     if (customSpecialty.trim()) {
       const trimmedSpecialty = customSpecialty.trim();
       console.log("Setting custom specialty:", trimmedSpecialty);
+      
+      // Add to temporary specialties so it appears in dropdown
+      setTemporarySpecialties(prev => {
+        if (!prev.includes(trimmedSpecialty)) {
+          return [...prev, trimmedSpecialty];
+        }
+        return prev;
+      });
+      
+      // Set the form value
       form.setValue("specialty", trimmedSpecialty);
+      
+      // Close the custom input and clear it
       setShowCustomSpecialty(false);
       setCustomSpecialty("");
+      
       toast({
         title: "Custom Specialty Added",
         description: `"${trimmedSpecialty}" has been set as the specialty`,
