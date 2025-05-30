@@ -209,7 +209,16 @@ export default function Quotes() {
     return contractors.find(contractor => contractor.id === quote.contractorId);
   };
 
-  // Group quotes by property, then by task
+  // Group all quotable tasks by property, including those without quotes
+  const quotableTasksByProperty = quotableTasks.reduce((acc, task) => {
+    if (!acc[task.propertyId]) {
+      acc[task.propertyId] = [];
+    }
+    acc[task.propertyId].push(task);
+    return acc;
+  }, {} as Record<number, Task[]>);
+
+  // Group quotes by property and task
   const quotesByPropertyAndTask = quotes.reduce((acc, quote) => {
     const propertyId = quote.propertyId;
     const taskId = quote.taskId || 0;
