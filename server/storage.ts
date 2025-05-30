@@ -1,12 +1,7 @@
-import { 
-  properties, contractors, quotes, tasks, documents, contacts,
-  type Property, type InsertProperty,
-  type Contractor, type InsertContractor,
-  type Quote, type InsertQuote,
-  type Task, type InsertTask,
-  type Document, type InsertDocument,
-  type Contact, type InsertContact
-} from "@shared/schema";
+import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Task, InsertTask, Document, InsertDocument, Contact, InsertContact } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { properties, contractors, quotes, tasks, documents, contacts } from "@shared/schema";
 
 export interface IStorage {
   // Properties
@@ -55,246 +50,204 @@ export interface IStorage {
   deleteContact(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private properties: Map<number, Property> = new Map();
-  private contractors: Map<number, Contractor> = new Map();
-  private quotes: Map<number, Quote> = new Map();
-  private tasks: Map<number, Task> = new Map();
-  private documents: Map<number, Document> = new Map();
-  private contacts: Map<number, Contact> = new Map();
-  private currentId = 1;
-
-  // Properties
+export class DatabaseStorage implements IStorage {
   async getProperties(): Promise<Property[]> {
-    return Array.from(this.properties.values());
+    return await db.select().from(properties);
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
-    return this.properties.get(id);
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property || undefined;
   }
 
-  async createProperty(insertProperty: InsertProperty): Promise<Property> {
-    const id = this.currentId++;
-    const property: Property = { 
-      ...insertProperty, 
-      id,
-      progress: insertProperty.progress || 0,
-      status: insertProperty.status || "planning",
-      projectedSalePrice: insertProperty.projectedSalePrice || null,
-      imageUrl: insertProperty.imageUrl || null,
-      notes: insertProperty.notes || null
-    };
-    this.properties.set(id, property);
-    return property;
+  async createProperty(property: InsertProperty): Promise<Property> {
+    const [newProperty] = await db
+      .insert(properties)
+      .values(property)
+      .returning();
+    return newProperty;
   }
 
-  async updateProperty(id: number, updates: Partial<InsertProperty>): Promise<Property | undefined> {
-    const existing = this.properties.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Property = { ...existing, ...updates };
-    this.properties.set(id, updated);
-    return updated;
+  async updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined> {
+    const [updated] = await db
+      .update(properties)
+      .set(property)
+      .where(eq(properties.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteProperty(id: number): Promise<boolean> {
-    return this.properties.delete(id);
+    const result = await db.delete(properties).where(eq(properties.id, id));
+    return result.rowCount > 0;
   }
 
-  // Contractors
   async getContractors(): Promise<Contractor[]> {
-    return Array.from(this.contractors.values());
+    return await db.select().from(contractors);
   }
 
   async getContractor(id: number): Promise<Contractor | undefined> {
-    return this.contractors.get(id);
+    const [contractor] = await db.select().from(contractors).where(eq(contractors.id, id));
+    return contractor || undefined;
   }
 
-  async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
-    const id = this.currentId++;
-    const contractor: Contractor = { 
-      ...insertContractor, 
-      id,
-      company: insertContractor.company || null,
-      email: insertContractor.email || null,
-      phone: insertContractor.phone || null,
-      rating: insertContractor.rating || null,
-      notes: insertContractor.notes || null
-    };
-    this.contractors.set(id, contractor);
-    return contractor;
+  async createContractor(contractor: InsertContractor): Promise<Contractor> {
+    const [newContractor] = await db
+      .insert(contractors)
+      .values(contractor)
+      .returning();
+    return newContractor;
   }
 
-  async updateContractor(id: number, updates: Partial<InsertContractor>): Promise<Contractor | undefined> {
-    const existing = this.contractors.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Contractor = { ...existing, ...updates };
-    this.contractors.set(id, updated);
-    return updated;
+  async updateContractor(id: number, contractor: Partial<InsertContractor>): Promise<Contractor | undefined> {
+    const [updated] = await db
+      .update(contractors)
+      .set(contractor)
+      .where(eq(contractors.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteContractor(id: number): Promise<boolean> {
-    return this.contractors.delete(id);
+    const result = await db.delete(contractors).where(eq(contractors.id, id));
+    return result.rowCount > 0;
   }
 
-  // Quotes
   async getQuotes(): Promise<Quote[]> {
-    return Array.from(this.quotes.values());
+    return await db.select().from(quotes);
   }
 
   async getQuotesByProperty(propertyId: number): Promise<Quote[]> {
-    return Array.from(this.quotes.values()).filter(quote => quote.propertyId === propertyId);
+    return await db.select().from(quotes).where(eq(quotes.propertyId, propertyId));
   }
 
   async getQuote(id: number): Promise<Quote | undefined> {
-    return this.quotes.get(id);
+    const [quote] = await db.select().from(quotes).where(eq(quotes.id, id));
+    return quote || undefined;
   }
 
-  async createQuote(insertQuote: InsertQuote): Promise<Quote> {
-    const id = this.currentId++;
-    const quote: Quote = { 
-      ...insertQuote, 
-      id,
-      status: insertQuote.status || "pending",
-      dateReceived: insertQuote.dateReceived || new Date(),
-      validUntil: insertQuote.validUntil || null,
-      notes: insertQuote.notes || null
-    };
-    this.quotes.set(id, quote);
-    return quote;
+  async createQuote(quote: InsertQuote): Promise<Quote> {
+    const [newQuote] = await db
+      .insert(quotes)
+      .values(quote)
+      .returning();
+    return newQuote;
   }
 
-  async updateQuote(id: number, updates: Partial<InsertQuote>): Promise<Quote | undefined> {
-    const existing = this.quotes.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Quote = { ...existing, ...updates };
-    this.quotes.set(id, updated);
-    return updated;
+  async updateQuote(id: number, quote: Partial<InsertQuote>): Promise<Quote | undefined> {
+    const [updated] = await db
+      .update(quotes)
+      .set(quote)
+      .where(eq(quotes.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteQuote(id: number): Promise<boolean> {
-    return this.quotes.delete(id);
+    const result = await db.delete(quotes).where(eq(quotes.id, id));
+    return result.rowCount > 0;
   }
 
-  // Tasks
   async getTasks(): Promise<Task[]> {
-    return Array.from(this.tasks.values());
+    return await db.select().from(tasks);
   }
 
   async getTasksByProperty(propertyId: number): Promise<Task[]> {
-    return Array.from(this.tasks.values()).filter(task => task.propertyId === propertyId);
+    return await db.select().from(tasks).where(eq(tasks.propertyId, propertyId));
   }
 
   async getTask(id: number): Promise<Task | undefined> {
-    return this.tasks.get(id);
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task || undefined;
   }
 
-  async createTask(insertTask: InsertTask): Promise<Task> {
-    const id = this.currentId++;
-    const task: Task = { 
-      ...insertTask, 
-      id,
-      status: insertTask.status || "pending",
-      priority: insertTask.priority || "medium",
-      description: insertTask.description || null,
-      dueDate: insertTask.dueDate || null,
-      assignedTo: insertTask.assignedTo || null
-    };
-    this.tasks.set(id, task);
-    return task;
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db
+      .insert(tasks)
+      .values(task)
+      .returning();
+    return newTask;
   }
 
-  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined> {
-    const existing = this.tasks.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Task = { ...existing, ...updates };
-    this.tasks.set(id, updated);
-    return updated;
+  async updateTask(id: number, task: Partial<InsertTask>): Promise<Task | undefined> {
+    const [updated] = await db
+      .update(tasks)
+      .set(task)
+      .where(eq(tasks.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteTask(id: number): Promise<boolean> {
-    return this.tasks.delete(id);
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return result.rowCount > 0;
   }
 
-  // Documents
   async getDocuments(): Promise<Document[]> {
-    return Array.from(this.documents.values());
+    return await db.select().from(documents);
   }
 
   async getDocumentsByProperty(propertyId: number): Promise<Document[]> {
-    return Array.from(this.documents.values()).filter(doc => doc.propertyId === propertyId);
+    return await db.select().from(documents).where(eq(documents.propertyId, propertyId));
   }
 
   async getDocument(id: number): Promise<Document | undefined> {
-    return this.documents.get(id);
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document || undefined;
   }
 
-  async createDocument(insertDocument: InsertDocument): Promise<Document> {
-    const id = this.currentId++;
-    const document: Document = { 
-      ...insertDocument, 
-      id,
-      uploadDate: insertDocument.uploadDate || new Date(),
-      propertyId: insertDocument.propertyId || null,
-      contractorId: insertDocument.contractorId || null,
-      tags: insertDocument.tags || null
-    };
-    this.documents.set(id, document);
-    return document;
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db
+      .insert(documents)
+      .values(document)
+      .returning();
+    return newDocument;
   }
 
-  async updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined> {
-    const existing = this.documents.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Document = { ...existing, ...updates };
-    this.documents.set(id, updated);
-    return updated;
+  async updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [updated] = await db
+      .update(documents)
+      .set(document)
+      .where(eq(documents.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteDocument(id: number): Promise<boolean> {
-    return this.documents.delete(id);
+    const result = await db.delete(documents).where(eq(documents.id, id));
+    return result.rowCount > 0;
   }
 
-  // Contacts
   async getContacts(): Promise<Contact[]> {
-    return Array.from(this.contacts.values());
+    return await db.select().from(contacts);
   }
 
   async getContact(id: number): Promise<Contact | undefined> {
-    return this.contacts.get(id);
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return contact || undefined;
   }
 
-  async createContact(insertContact: InsertContact): Promise<Contact> {
-    const id = this.currentId++;
-    const contact: Contact = { 
-      ...insertContact, 
-      id,
-      company: insertContact.company || null,
-      email: insertContact.email || null,
-      phone: insertContact.phone || null,
-      address: insertContact.address || null,
-      notes: insertContact.notes || null
-    };
-    this.contacts.set(id, contact);
-    return contact;
+  async createContact(contact: InsertContact): Promise<Contact> {
+    const [newContact] = await db
+      .insert(contacts)
+      .values(contact)
+      .returning();
+    return newContact;
   }
 
-  async updateContact(id: number, updates: Partial<InsertContact>): Promise<Contact | undefined> {
-    const existing = this.contacts.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Contact = { ...existing, ...updates };
-    this.contacts.set(id, updated);
-    return updated;
+  async updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined> {
+    const [updated] = await db
+      .update(contacts)
+      .set(contact)
+      .where(eq(contacts.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteContact(id: number): Promise<boolean> {
-    return this.contacts.delete(id);
+    const result = await db.delete(contacts).where(eq(contacts.id, id));
+    return result.rowCount > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
