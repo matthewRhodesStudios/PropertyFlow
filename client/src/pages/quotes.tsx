@@ -132,14 +132,20 @@ export default function Quotes() {
     return contractors.find(contractor => contractor.id === quote.contractorId);
   };
 
-  // Group quotes by property
-  const quotesByProperty = quotes.reduce((acc, quote) => {
-    if (!acc[quote.propertyId]) {
-      acc[quote.propertyId] = [];
+  // Group quotes by property, then by task
+  const quotesByPropertyAndTask = quotes.reduce((acc, quote) => {
+    const propertyId = quote.propertyId;
+    const taskId = quote.taskId || 0;
+    
+    if (!acc[propertyId]) {
+      acc[propertyId] = {};
     }
-    acc[quote.propertyId].push(quote);
+    if (!acc[propertyId][taskId]) {
+      acc[propertyId][taskId] = [];
+    }
+    acc[propertyId][taskId].push(quote);
     return acc;
-  }, {} as Record<number, Quote[]>);
+  }, {} as Record<number, Record<number, Quote[]>>);
 
   return (
     <div className="space-y-6">
@@ -350,7 +356,7 @@ export default function Quotes() {
         </Card>
       )}
 
-      {Object.entries(quotesByProperty).map(([propertyId, propertyQuotes]) => {
+      {Object.entries(quotesByPropertyAndTask).map(([propertyId, taskGroups]) => {
         const property = properties.find(p => p.id === parseInt(propertyId));
         if (!property) return null;
 
@@ -363,46 +369,55 @@ export default function Quotes() {
                   <Badge variant="outline" className="border-2">{property.type}</Badge>
                 </div>
                 <div className="text-sm text-gray-600">
-                  {propertyQuotes.length} quote{propertyQuotes.length !== 1 ? 's' : ''}
+                  {Object.values(taskGroups).flat().length} quote{Object.values(taskGroups).flat().length !== 1 ? 's' : ''}
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="space-y-4 p-6">
-                {propertyQuotes.map((quote) => {
-                  const task = getTaskForQuote(quote);
-                  const contractor = getContractorForQuote(quote);
-
+              <div className="space-y-6 p-6">
+                {Object.entries(taskGroups).map(([taskId, taskQuotes]) => {
+                  const task = tasks.find(t => t.id === parseInt(taskId));
+                  
                   return (
-                    <div key={quote.id} className={cn(
-                      "p-4 rounded-lg border-2",
-                      getStatusColor(quote.status)
-                    )}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            {getStatusIcon(quote.status)}
-                            <h3 className="font-semibold text-lg">{quote.service}</h3>
-                            <Badge className={getStatusColor(quote.status)}>
-                              {quote.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">Task:</span>
-                              <span>{task?.title || 'Unknown Task'}</span>
-                              {task && (
-                                <Badge variant="outline" className="text-xs">
-                                  {task.category.replace('_', ' ')}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">Contractor:</span>
-                              <span>{contractor?.name} - {contractor?.company}</span>
-                            </div>
+                    <div key={taskId} className="space-y-3">
+                      <div className="flex items-center gap-3 border-b pb-2">
+                        <h3 className="font-semibold text-lg">
+                          {task ? task.title : 'General Quotes'}
+                        </h3>
+                        {task && (
+                          <Badge variant="outline" className="text-xs">
+                            {task.category.replace('_', ' ')}
+                          </Badge>
+                        )}
+                        <span className="text-sm text-gray-500">
+                          {taskQuotes.length} quote{taskQuotes.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {taskQuotes.map((quote) => {
+                          const contractor = getContractorForQuote(quote);
+
+                          return (
+                            <div key={quote.id} className={cn(
+                              "p-4 rounded-lg border-2",
+                              getStatusColor(quote.status)
+                            )}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    {getStatusIcon(quote.status)}
+                                    <h3 className="font-semibold text-lg">{quote.service}</h3>
+                                    <Badge className={getStatusColor(quote.status)}>
+                                      {quote.status}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Contractor:</span>
+                                      <span>{contractor?.name} - {contractor?.company}</span>
+                                    </div>
                             
                             <div className="flex items-center gap-2">
                               <span className="font-medium">Received:</span>
@@ -433,7 +448,7 @@ export default function Quotes() {
                         <div className="flex flex-col items-end gap-3">
                           <div className="text-right">
                             <div className="text-2xl font-bold text-green-600">
-                              £{formatCurrency(quote.amount)}
+                              {formatCurrency(quote.amount)}
                             </div>
                           </div>
                           
