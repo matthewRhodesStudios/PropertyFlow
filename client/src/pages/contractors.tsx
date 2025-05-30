@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, Phone, Mail, Building, Star, FileText, Receipt, Hammer } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Building, Star, FileText, Receipt, Hammer, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Contractors() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -49,9 +49,9 @@ export default function Contractors() {
       name: "",
       company: "",
       specialty: "",
+      rating: "",
       email: "",
       phone: "",
-      rating: "",
       notes: "",
     },
   });
@@ -62,7 +62,7 @@ export default function Contractors() {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
       setIsAddDialogOpen(false);
       form.reset();
-      toast({ title: "Contractor added successfully" });
+      toast({ title: "Contractor added successfully!" });
     },
     onError: () => {
       toast({ title: "Failed to add contractor", variant: "destructive" });
@@ -102,11 +102,10 @@ export default function Contractors() {
     const colors: Record<string, string> = {
       plumbing: "bg-blue-100 text-blue-800",
       electrical: "bg-yellow-100 text-yellow-800",
-      flooring: "bg-amber-100 text-amber-800",
+      carpentry: "bg-orange-100 text-orange-800",
       painting: "bg-green-100 text-green-800",
-      roofing: "bg-gray-100 text-gray-800",
-      hvac: "bg-purple-100 text-purple-800",
-      general: "bg-indigo-100 text-indigo-800",
+      roofing: "bg-red-100 text-red-800",
+      landscaping: "bg-teal-100 text-teal-800",
     };
     return colors[specialty.toLowerCase()] || "bg-gray-100 text-gray-800";
   };
@@ -127,6 +126,38 @@ export default function Contractors() {
     return <div className="flex items-center">{stars}</div>;
   };
 
+  const getFileIcon = (filePath: string, fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '');
+    
+    if (isImage) {
+      return (
+        <div className="relative">
+          <img 
+            src={filePath} 
+            alt={fileName}
+            className="w-10 h-10 object-cover rounded-lg"
+            onError={(e) => {
+              // Fallback to file icon if image fails to load
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center" style={{ display: 'none' }}>
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+        <FileText className="h-5 w-5 text-primary" />
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -140,271 +171,18 @@ export default function Contractors() {
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
                 <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-5 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </div>
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
-
-  // Show detailed contractor view if one is selected
-  if (selectedContractor) {
-    const contractorQuotes = getContractorQuotes(selectedContractor.id);
-    const contractorDocuments = getContractorDocuments(selectedContractor.id);
-    const contractorTasks = getContractorTasks(selectedContractor.id);
-    const totalQuoteValue = getTotalQuoteValue(contractorQuotes);
-
-    return (
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setSelectedContractor(null)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Contractors
-          </Button>
-          <h1 className="text-2xl font-semibold">{selectedContractor.name}</h1>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                Contractor Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">{selectedContractor.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Company</p>
-                  <p className="font-medium">{selectedContractor.company || "No company"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">{selectedContractor.email || "No email"}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">{selectedContractor.phone || "No phone"}</p>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">Specialty</p>
-                  <Badge className={getSpecialtyColor(selectedContractor.specialty || "")}>
-                    {selectedContractor.specialty || "No specialty"}
-                  </Badge>
-                </div>
-                {selectedContractor.rating && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">Rating</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{selectedContractor.rating}/5</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {selectedContractor.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-sm">{selectedContractor.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center p-4 bg-primary/5 rounded-lg">
-                <p className="text-2xl font-bold text-primary">{formatCurrency(totalQuoteValue)}</p>
-                <p className="text-sm text-muted-foreground">Total Quote Value</p>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold">{contractorQuotes.length}</p>
-                  <p className="text-xs text-muted-foreground">Quotes</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{contractorTasks.length}</p>
-                  <p className="text-xs text-muted-foreground">Tasks</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{contractorDocuments.length}</p>
-                  <p className="text-xs text-muted-foreground">Documents</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="quotes" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="quotes" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              Quotes ({contractorQuotes.length})
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <Hammer className="h-4 w-4" />
-              Tasks ({contractorTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Documents ({contractorDocuments.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="quotes" className="space-y-4">
-            {contractorQuotes.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No quotes</h3>
-                  <p className="text-muted-foreground">This contractor hasn't provided any quotes yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {contractorQuotes.map((quote) => (
-                  <Card key={quote.id}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{quote.service || "Quote"}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Property: {getPropertyName(quote.propertyId)}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <Badge variant={quote.status === "accepted" ? "default" : "secondary"}>
-                              {quote.status}
-                            </Badge>
-                            {quote.validUntil && (
-                              <span className="text-sm text-muted-foreground">
-                                Valid until: {new Date(quote.validUntil).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold">{formatCurrency(parseFloat(quote.amount?.toString() || "0"))}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="tasks" className="space-y-4">
-            {contractorTasks.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Hammer className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No tasks</h3>
-                  <p className="text-muted-foreground">This contractor isn't assigned to any tasks yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {contractorTasks.map((task) => (
-                  <Card key={task.id}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium">{task.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Property: {getPropertyName(task.propertyId)}
-                          </p>
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2">
-                            <Badge variant={task.status === "completed" ? "default" : "secondary"}>
-                              {task.status}
-                            </Badge>
-                            {task.dueDate && (
-                              <span className="text-sm text-muted-foreground">
-                                Due: {new Date(task.dueDate).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="documents" className="space-y-4">
-            {contractorDocuments.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No documents</h3>
-                  <p className="text-muted-foreground">No documents are associated with this contractor.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {contractorDocuments.map((document) => (
-                  <Card key={document.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-primary" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium truncate">{document.name}</h4>
-                          <p className="text-xs text-muted-foreground capitalize">{document.type}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Property: {getPropertyName(document.propertyId)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 mt-3">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => window.open(document.filePath, '_blank')}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
       </div>
     );
   }
@@ -425,14 +203,14 @@ export default function Contractors() {
               <DialogTitle>Add New Contractor</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Name</FormLabel>
+                        <FormLabel>Name *</FormLabel>
                         <FormControl>
                           <Input placeholder="John Smith" {...field} />
                         </FormControl>
@@ -440,7 +218,7 @@ export default function Contractors() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="company"
@@ -448,7 +226,7 @@ export default function Contractors() {
                       <FormItem>
                         <FormLabel>Company (optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="ABC Construction" {...field} />
+                          <Input placeholder="Smith Construction Ltd" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -460,9 +238,9 @@ export default function Contractors() {
                     name="specialty"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Specialty</FormLabel>
+                        <FormLabel>Specialty *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Plumbing, Electrical" {...field} />
+                          <Input placeholder="Plumbing, Electrical, etc." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -474,13 +252,13 @@ export default function Contractors() {
                     name="rating"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rating (1-5)</FormLabel>
+                        <FormLabel>Rating (optional)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
                             min="1" 
                             max="5" 
-                            step="0.1"
+                            step="0.5" 
                             placeholder="4.5" 
                             {...field} 
                           />
@@ -549,98 +327,261 @@ export default function Contractors() {
 
       {contractors.length === 0 ? (
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <span className="material-icons text-gray-400 text-6xl mb-4">build</span>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No contractors yet</h3>
-              <p className="text-gray-500 mb-6">Build your network of trusted contractors and trades for your renovation projects.</p>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary-dark">
-                <span className="material-icons mr-2">person_add</span>
-                Add Your First Contractor
-              </Button>
+          <CardContent className="p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="material-icons text-3xl text-gray-400">person_add</span>
             </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No contractors yet</h3>
+            <p className="text-gray-500 mb-6">Get started by adding your first contractor.</p>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary-dark">
+              <span className="material-icons mr-2">person_add</span>
+              Add Contractor
+            </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {contractors.map((contractor) => (
-            <Card 
-              key={contractor.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setSelectedContractor(contractor)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <span className="material-icons text-primary">person</span>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {contractors.map((contractor) => (
+              <Card 
+                key={contractor.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => setSelectedContractor(selectedContractor?.id === contractor.id ? null : contractor)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="material-icons text-primary">person</span>
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{contractor.name}</CardTitle>
+                      {contractor.company && (
+                        <p className="text-sm text-gray-500">{contractor.company}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center">
+                      {selectedContractor?.id === contractor.id ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{contractor.name}</CardTitle>
-                    {contractor.company && (
-                      <p className="text-sm text-gray-500">{contractor.company}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Badge className={getSpecialtyColor(contractor.specialty)}>
+                        {contractor.specialty}
+                      </Badge>
+                      {contractor.rating && renderStars(contractor.rating)}
+                    </div>
+                    
+                    {contractor.email && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="material-icons text-sm mr-2">email</span>
+                        {contractor.email}
+                      </div>
+                    )}
+                    
+                    {contractor.phone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="material-icons text-sm mr-2">phone</span>
+                        {contractor.phone}
+                      </div>
+                    )}
+                    
+                    {contractor.notes && (
+                      <p className="text-sm text-gray-600 truncate">{contractor.notes}</p>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Expanded contractor details */}
+          {selectedContractor && (
+            <Card className="mt-6 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  {selectedContractor.name} - Detailed View
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge className={getSpecialtyColor(contractor.specialty)}>
-                      {contractor.specialty}
-                    </Badge>
-                    {contractor.rating && renderStars(contractor.rating)}
-                  </div>
-                  
-                  {contractor.email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="material-icons text-sm mr-2">email</span>
-                      {contractor.email}
+                {(() => {
+                  const contractorQuotes = getContractorQuotes(selectedContractor.id);
+                  const contractorDocuments = getContractorDocuments(selectedContractor.id);
+                  const contractorTasks = getContractorTasks(selectedContractor.id);
+                  const totalQuoteValue = getTotalQuoteValue(contractorQuotes);
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-primary/5 rounded-lg">
+                          <p className="text-2xl font-bold text-primary">{formatCurrency(totalQuoteValue)}</p>
+                          <p className="text-sm text-muted-foreground">Total Quote Value</p>
+                        </div>
+                        <div className="text-center p-4 bg-blue-50 rounded-lg">
+                          <p className="text-2xl font-bold text-blue-600">{contractorQuotes.length}</p>
+                          <p className="text-sm text-muted-foreground">Quotes</p>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 rounded-lg">
+                          <p className="text-2xl font-bold text-green-600">{contractorTasks.length}</p>
+                          <p className="text-sm text-muted-foreground">Tasks</p>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 rounded-lg">
+                          <p className="text-2xl font-bold text-orange-600">{contractorDocuments.length}</p>
+                          <p className="text-sm text-muted-foreground">Documents</p>
+                        </div>
+                      </div>
+
+                      {/* Detailed Information Tabs */}
+                      <Tabs defaultValue="quotes" className="space-y-4">
+                        <TabsList>
+                          <TabsTrigger value="quotes" className="flex items-center gap-2">
+                            <Receipt className="h-4 w-4" />
+                            Quotes ({contractorQuotes.length})
+                          </TabsTrigger>
+                          <TabsTrigger value="tasks" className="flex items-center gap-2">
+                            <Hammer className="h-4 w-4" />
+                            Tasks ({contractorTasks.length})
+                          </TabsTrigger>
+                          <TabsTrigger value="documents" className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Documents ({contractorDocuments.length})
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="quotes" className="space-y-4">
+                          {contractorQuotes.length === 0 ? (
+                            <div className="text-center p-12">
+                              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2">No quotes</h3>
+                              <p className="text-muted-foreground">This contractor hasn't provided any quotes yet.</p>
+                            </div>
+                          ) : (
+                            <div className="grid gap-4">
+                              {contractorQuotes.map((quote) => (
+                                <Card key={quote.id}>
+                                  <CardContent className="p-4">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-medium">{quote.service || "Quote"}</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          Property: {getPropertyName(quote.propertyId)}
+                                        </p>
+                                        <div className="flex items-center gap-4 mt-2">
+                                          <Badge variant={quote.status === "accepted" ? "default" : "secondary"}>
+                                            {quote.status}
+                                          </Badge>
+                                          {quote.validUntil && (
+                                            <span className="text-sm text-muted-foreground">
+                                              Valid until: {new Date(quote.validUntil).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-lg font-bold">{formatCurrency(parseFloat(quote.amount?.toString() || "0"))}</p>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </TabsContent>
+
+                        <TabsContent value="tasks" className="space-y-4">
+                          {contractorTasks.length === 0 ? (
+                            <div className="text-center p-12">
+                              <Hammer className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2">No tasks</h3>
+                              <p className="text-muted-foreground">This contractor isn't assigned to any tasks yet.</p>
+                            </div>
+                          ) : (
+                            <div className="grid gap-4">
+                              {contractorTasks.map((task) => (
+                                <Card key={task.id}>
+                                  <CardContent className="p-4">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-medium">{task.title}</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          Property: {getPropertyName(task.propertyId)}
+                                        </p>
+                                        {task.description && (
+                                          <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-4 mt-2">
+                                          <Badge variant={task.status === "completed" ? "default" : "secondary"}>
+                                            {task.status}
+                                          </Badge>
+                                          {task.dueDate && (
+                                            <span className="text-sm text-muted-foreground">
+                                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </TabsContent>
+
+                        <TabsContent value="documents" className="space-y-4">
+                          {contractorDocuments.length === 0 ? (
+                            <div className="text-center p-12">
+                              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2">No documents</h3>
+                              <p className="text-muted-foreground">No documents are associated with this contractor.</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {contractorDocuments.map((document) => (
+                                <Card key={document.id} className="hover:shadow-md transition-shadow">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start space-x-3">
+                                      <div className="flex-shrink-0">
+                                        {getFileIcon(document.filePath, document.name)}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-medium truncate">{document.name}</h4>
+                                        <p className="text-xs text-muted-foreground capitalize">{document.type}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Property: {getPropertyName(document.propertyId)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex space-x-2 mt-3">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="flex-1"
+                                        onClick={() => window.open(document.filePath, '_blank')}
+                                      >
+                                        View
+                                      </Button>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
                     </div>
-                  )}
-                  
-                  {contractor.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="material-icons text-sm mr-2">phone</span>
-                      {contractor.phone}
-                    </div>
-                  )}
-                  
-                  {contractor.notes && (
-                    <p className="text-sm text-gray-500 border-t pt-2">
-                      {contractor.notes}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex space-x-2 mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => setLocation("/quotes")}
-                  >
-                    <span className="material-icons text-sm mr-1">request_quote</span>
-                    Quote
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      if (contractor.email) {
-                        window.open(`mailto:${contractor.email}`, '_blank');
-                      } else if (contractor.phone) {
-                        window.open(`tel:${contractor.phone}`, '_blank');
-                      }
-                    }}
-                  >
-                    <span className="material-icons text-sm mr-1">contact_phone</span>
-                    Contact
-                  </Button>
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
       )}
     </div>
