@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuoteSchema, type Quote, type InsertQuote, type Job, type Property, type Contractor } from "@shared/schema";
+import { insertQuoteSchema, insertJobSchema, type Quote, type InsertQuote, type Job, type InsertJob, type Property, type Contractor } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,6 +19,8 @@ export default function Quotes() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedTrade, setSelectedTrade] = useState<string>("all");
+  const [isCreatingNewJob, setIsCreatingNewJob] = useState(false);
+  const [newJobName, setNewJobName] = useState("");
   const { toast } = useToast();
 
   const { data: quotes = [], isLoading } = useQuery<Quote[]>({
@@ -85,7 +87,37 @@ export default function Quotes() {
     },
   });
 
-  const onSubmit = (data: InsertQuote) => {
+  const createJobMutation = useMutation({
+    mutationFn: (data: InsertJob) => apiRequest("POST", "/api/jobs", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({ title: "Job created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create job", variant: "destructive" });
+    },
+  });
+
+  const onSubmit = async (data: InsertQuote) => {
+    // If creating a new job, create it first
+    if (isCreatingNewJob && newJobName.trim()) {
+      try {
+        const response = await createJobMutation.mutateAsync({
+          name: newJobName.trim(),
+          propertyId: data.propertyId,
+          status: "planning",
+          description: `Job created for quote: ${data.service}`
+        });
+        const newJob = response as unknown as Job;
+        data.jobId = newJob.id;
+        setIsCreatingNewJob(false);
+        setNewJobName("");
+      } catch (error) {
+        toast({ title: "Failed to create job", variant: "destructive" });
+        return;
+      }
+    }
+    
     createQuoteMutation.mutate(data);
   };
 
@@ -244,21 +276,60 @@ export default function Quotes() {
                     name="jobId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project/Job (optional)</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select project" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {jobs.map((job) => (
-                              <SelectItem key={job.id} value={job.id.toString()}>
-                                {job.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Project/Job</FormLabel>
+                        <div className="space-y-2">
+                          {!isCreatingNewJob ? (
+                            <div className="flex space-x-2">
+                              <Select onValueChange={(value) => {
+                                if (value === "create-new") {
+                                  setIsCreatingNewJob(true);
+                                  field.onChange(null);
+                                } else {
+                                  field.onChange(value ? parseInt(value) : null);
+                                }
+                              }}>
+                                <FormControl>
+                                  <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="Select existing or create new project" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="create-new">
+                                    <div className="flex items-center">
+                                      <span className="material-icons text-sm mr-2">add</span>
+                                      Create New Project
+                                    </div>
+                                  </SelectItem>
+                                  {jobs.map((job) => (
+                                    <SelectItem key={job.id} value={job.id.toString()}>
+                                      {job.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            <div className="flex space-x-2">
+                              <Input
+                                placeholder="Enter new project name (e.g. Kitchen Renovation)"
+                                value={newJobName}
+                                onChange={(e) => setNewJobName(e.target.value)}
+                                className="flex-1"
+                              />
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                  setIsCreatingNewJob(false);
+                                  setNewJobName("");
+                                }}
+                              >
+                                <span className="material-icons text-sm">close</span>
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
