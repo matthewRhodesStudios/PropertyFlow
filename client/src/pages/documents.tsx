@@ -238,7 +238,7 @@ export default function Documents() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No contractor</SelectItem>
+                            <SelectItem value="none">No contractor</SelectItem>
                             {contractors.map((contractor) => (
                               <SelectItem key={contractor.id} value={contractor.id.toString()}>
                                 {contractor.name}
