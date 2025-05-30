@@ -1,4 +1,5 @@
 import type { Property } from "@shared/schema";
+import { formatCurrency } from "@/lib/utils";
 
 interface PropertyCardProps {
   property: Property;

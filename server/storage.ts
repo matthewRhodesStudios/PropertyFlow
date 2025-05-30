@@ -75,7 +75,15 @@ export class MemStorage implements IStorage {
 
   async createProperty(insertProperty: InsertProperty): Promise<Property> {
     const id = this.currentId++;
-    const property: Property = { ...insertProperty, id };
+    const property: Property = { 
+      ...insertProperty, 
+      id,
+      progress: insertProperty.progress || 0,
+      status: insertProperty.status || "planning",
+      projectedSalePrice: insertProperty.projectedSalePrice || null,
+      imageUrl: insertProperty.imageUrl || null,
+      notes: insertProperty.notes || null
+    };
     this.properties.set(id, property);
     return property;
   }
@@ -104,7 +112,15 @@ export class MemStorage implements IStorage {
 
   async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
     const id = this.currentId++;
-    const contractor: Contractor = { ...insertContractor, id };
+    const contractor: Contractor = { 
+      ...insertContractor, 
+      id,
+      company: insertContractor.company || null,
+      email: insertContractor.email || null,
+      phone: insertContractor.phone || null,
+      rating: insertContractor.rating || null,
+      notes: insertContractor.notes || null
+    };
     this.contractors.set(id, contractor);
     return contractor;
   }
@@ -140,7 +156,10 @@ export class MemStorage implements IStorage {
     const quote: Quote = { 
       ...insertQuote, 
       id,
-      dateReceived: insertQuote.dateReceived || new Date()
+      status: insertQuote.status || "pending",
+      dateReceived: insertQuote.dateReceived || new Date(),
+      validUntil: insertQuote.validUntil || null,
+      notes: insertQuote.notes || null
     };
     this.quotes.set(id, quote);
     return quote;
@@ -174,7 +193,15 @@ export class MemStorage implements IStorage {
 
   async createTask(insertTask: InsertTask): Promise<Task> {
     const id = this.currentId++;
-    const task: Task = { ...insertTask, id };
+    const task: Task = { 
+      ...insertTask, 
+      id,
+      status: insertTask.status || "pending",
+      priority: insertTask.priority || "medium",
+      description: insertTask.description || null,
+      dueDate: insertTask.dueDate || null,
+      assignedTo: insertTask.assignedTo || null
+    };
     this.tasks.set(id, task);
     return task;
   }
@@ -210,7 +237,10 @@ export class MemStorage implements IStorage {
     const document: Document = { 
       ...insertDocument, 
       id,
-      uploadDate: insertDocument.uploadDate || new Date()
+      uploadDate: insertDocument.uploadDate || new Date(),
+      propertyId: insertDocument.propertyId || null,
+      contractorId: insertDocument.contractorId || null,
+      tags: insertDocument.tags || null
     };
     this.documents.set(id, document);
     return document;
@@ -240,7 +270,15 @@ export class MemStorage implements IStorage {
 
   async createContact(insertContact: InsertContact): Promise<Contact> {
     const id = this.currentId++;
-    const contact: Contact = { ...insertContact, id };
+    const contact: Contact = { 
+      ...insertContact, 
+      id,
+      company: insertContact.company || null,
+      email: insertContact.email || null,
+      phone: insertContact.phone || null,
+      address: insertContact.address || null,
+      notes: insertContact.notes || null
+    };
     this.contacts.set(id, contact);
     return contact;
   }
