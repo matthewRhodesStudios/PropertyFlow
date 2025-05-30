@@ -388,7 +388,7 @@ export default function Documents() {
                     onClick={() => {
                       // Create proper download URL
                       const downloadUrl = `/api/documents/${document.id}/download`;
-                      const link = document.createElement('a');
+                      const link = window.document.createElement('a');
                       link.href = downloadUrl;
                       link.download = document.name;
                       link.click();

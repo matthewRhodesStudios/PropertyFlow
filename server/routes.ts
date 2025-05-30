@@ -328,6 +328,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/documents/:id/view", async (req, res) => {
+    try {
+      const document = await storage.getDocument(parseInt(req.params.id));
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // For demo purposes, create a placeholder response
+      // In a real app, you would serve the actual file from storage
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${document.name}"`);
+      res.send(`Document: ${document.name}\nType: ${document.type}\nThis is a placeholder for the actual document content.`);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to view document" });
+    }
+  });
+
+  app.get("/api/documents/:id/download", async (req, res) => {
+    try {
+      const document = await storage.getDocument(parseInt(req.params.id));
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // For demo purposes, create a placeholder download
+      // In a real app, you would serve the actual file from storage
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${document.name}"`);
+      res.send(`Document: ${document.name}\nType: ${document.type}\nThis is a placeholder for the actual document content.`);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to download document" });
+    }
+  });
+
   // Contacts routes
   app.get("/api/contacts", async (_req, res) => {
     try {
