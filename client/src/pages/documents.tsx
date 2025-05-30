@@ -190,9 +190,30 @@ export default function Documents() {
                     name="filePath"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>File Path/URL</FormLabel>
+                        <FormLabel>Upload File</FormLabel>
                         <FormControl>
-                          <Input placeholder="/uploads/document.pdf" {...field} />
+                          <div className="space-y-2">
+                            <Input 
+                              type="file" 
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.xls"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  // For now, just set the filename as the path
+                                  // In a real implementation, you'd upload to a server
+                                  field.onChange(`/uploads/${file.name}`);
+                                  // Auto-populate document name if empty
+                                  if (!form.getValues("name")) {
+                                    form.setValue("name", file.name.replace(/\.[^/.]+$/, ""));
+                                  }
+                                }
+                              }}
+                              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT, Excel
+                            </p>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
