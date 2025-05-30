@@ -79,13 +79,19 @@ export default function Gantt() {
   });
 
   const updateContactMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
-      apiRequest("PATCH", `/api/contacts/${id}`, data),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      console.log('Making PATCH request to:', `/api/contacts/${id}`, 'with data:', data);
+      return apiRequest("PATCH", `/api/contacts/${id}`, data);
+    },
+    onSuccess: (result) => {
+      console.log('Update successful:', result);
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       setEditContactOpen(false);
       contactForm.reset();
       setEditingContact(null);
+    },
+    onError: (error) => {
+      console.error('Update failed:', error);
     },
   });
 
