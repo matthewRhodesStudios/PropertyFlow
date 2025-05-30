@@ -241,8 +241,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTask(id: number): Promise<boolean> {
+    // First delete all related jobs
+    await db.delete(jobs).where(eq(jobs.taskId, id));
+    
+    // Then delete the task
     const result = await db.delete(tasks).where(eq(tasks.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getDocuments(): Promise<Document[]> {
