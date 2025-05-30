@@ -38,6 +38,14 @@ export default function Documents() {
     queryKey: ["/api/contacts"],
   });
 
+  const { data: tasks = [] } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const { data: jobs = [] } = useQuery<Job[]>({
+    queryKey: ["/api/jobs"],
+  });
+
   const form = useForm<InsertDocument>({
     resolver: zodResolver(insertDocumentSchema),
     defaultValues: {
@@ -323,7 +331,7 @@ export default function Documents() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contractor (optional)</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}>
+                        <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select contractor" />
@@ -333,7 +341,7 @@ export default function Documents() {
                             <SelectItem value="none">No contractor</SelectItem>
                             {contractors.map((contractor) => (
                               <SelectItem key={contractor.id} value={contractor.id.toString()}>
-                                {contractor.name}
+                                {contractor.name} - {contractor.company}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -342,6 +350,71 @@ export default function Documents() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="contactId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact (optional)</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select contact" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">No contact</SelectItem>
+                            {contacts.map((contact) => (
+                              <SelectItem key={contact.id} value={contact.id.toString()}>
+                                {contact.name} - {contact.role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="col-span-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Task Assignments (optional)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Task</label>
+                        <Select defaultValue="none">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select task" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No task</SelectItem>
+                            {tasks.map((task) => (
+                              <SelectItem key={task.id} value={task.id.toString()}>
+                                {task.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Subtask</label>
+                        <Select defaultValue="none">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subtask" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No subtask</SelectItem>
+                            {jobs.map((job) => (
+                              <SelectItem key={job.id} value={job.id.toString()}>
+                                {job.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-2">
@@ -485,6 +558,45 @@ export default function Documents() {
                     </FormItem>
                   )}
                 />
+
+                <div className="col-span-2">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Task Assignments (optional)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Task</label>
+                      <Select defaultValue="none">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No task</SelectItem>
+                          {tasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id.toString()}>
+                              {task.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subtask</label>
+                      <Select defaultValue="none">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subtask" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No subtask</SelectItem>
+                          {jobs.map((job) => (
+                            <SelectItem key={job.id} value={job.id.toString()}>
+                              {job.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
