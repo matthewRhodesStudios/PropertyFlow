@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContractorSchema, type InsertContractor, type Contractor, type Quote, type Task, type Document } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit } from "lucide-react";
+import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contractors() {
@@ -24,6 +24,7 @@ export default function Contractors() {
   const [editingContractor, setEditingContractor] = useState<Contractor | null>(null);
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
 
   const { data: contractors = [], isLoading } = useQuery({
@@ -85,6 +86,26 @@ export default function Contractors() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/contractors/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      setEditingContractor(null);
+      setIsFormOpen(false);
+      toast({
+        title: "Success",
+        description: "Contractor deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to delete contractor",
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<InsertContractor>({
     resolver: zodResolver(insertContractorSchema),
     defaultValues: {
@@ -131,6 +152,7 @@ export default function Contractors() {
     setEditingContractor(null);
     setShowCustomSpecialty(false);
     setCustomSpecialty("");
+    setShowDeleteConfirm(false);
     form.reset({
       name: "",
       company: "",
@@ -143,6 +165,12 @@ export default function Contractors() {
       rating: undefined,
       notes: "",
     });
+  };
+
+  const handleDelete = () => {
+    if (editingContractor) {
+      deleteMutation.mutate(editingContractor.id);
+    }
   };
 
   const getExistingSpecialties = () => {
@@ -514,17 +542,52 @@ export default function Contractors() {
                     </FormItem>
                   )}
                 />
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={handleCloseForm}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                    {editingContractor ? (
-                      updateMutation.isPending ? "Updating..." : "Update Contractor"
-                    ) : (
-                      createMutation.isPending ? "Adding..." : "Add Contractor"
-                    )}
-                  </Button>
+                <div className="flex justify-between">
+                  {editingContractor && (
+                    <div>
+                      {!showDeleteConfirm ? (
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          onClick={() => setShowDeleteConfirm(true)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      ) : (
+                        <div className="flex space-x-2">
+                          <Button 
+                            type="button" 
+                            variant="destructive" 
+                            onClick={handleDelete}
+                            disabled={deleteMutation.isPending}
+                          >
+                            {deleteMutation.isPending ? "Deleting..." : "Confirm Delete"}
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setShowDeleteConfirm(false)}
+                          >
+                            Cancel Delete
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex space-x-2">
+                    <Button type="button" variant="outline" onClick={handleCloseForm}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}>
+                      {editingContractor ? (
+                        updateMutation.isPending ? "Updating..." : "Update Contractor"
+                      ) : (
+                        createMutation.isPending ? "Adding..." : "Add Contractor"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </Form>
