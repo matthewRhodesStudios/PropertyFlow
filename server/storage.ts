@@ -26,6 +26,14 @@ export interface IStorage {
   updateQuote(id: number, quote: Partial<InsertQuote>): Promise<Quote | undefined>;
   deleteQuote(id: number): Promise<boolean>;
 
+  // Jobs
+  getJobs(): Promise<Job[]>;
+  getJobsByProperty(propertyId: number): Promise<Job[]>;
+  getJob(id: number): Promise<Job | undefined>;
+  createJob(job: InsertJob): Promise<Job>;
+  updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined>;
+  deleteJob(id: number): Promise<boolean>;
+
   // Tasks
   getTasks(): Promise<Task[]>;
   getTasksByProperty(propertyId: number): Promise<Task[]>;
@@ -145,6 +153,41 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: number): Promise<boolean> {
     const result = await db.delete(quotes).where(eq(quotes.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getJobs(): Promise<Job[]> {
+    return await db.select().from(jobs);
+  }
+
+  async getJobsByProperty(propertyId: number): Promise<Job[]> {
+    return await db.select().from(jobs).where(eq(jobs.propertyId, propertyId));
+  }
+
+  async getJob(id: number): Promise<Job | undefined> {
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, id));
+    return job || undefined;
+  }
+
+  async createJob(job: InsertJob): Promise<Job> {
+    const [newJob] = await db
+      .insert(jobs)
+      .values(job)
+      .returning();
+    return newJob;
+  }
+
+  async updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined> {
+    const [updated] = await db
+      .update(jobs)
+      .set(job)
+      .where(eq(jobs.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteJob(id: number): Promise<boolean> {
+    const result = await db.delete(jobs).where(eq(jobs.id, id));
     return result.rowCount > 0;
   }
 

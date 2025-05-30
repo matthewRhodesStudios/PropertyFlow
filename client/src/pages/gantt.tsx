@@ -36,7 +36,6 @@ export default function Gantt() {
     defaultValues: {
       title: "",
       description: "",
-      propertyId: 0,
       status: "pending",
       priority: "medium",
       assignedTo: "",
