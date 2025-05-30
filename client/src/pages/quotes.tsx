@@ -539,11 +539,6 @@ export default function Quotes() {
                                   
                                   <div className="space-y-2 text-sm">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium">Company:</span>
-                                      <span>{contractor?.company || 'Unknown Company'}</span>
-                                    </div>
-                            
-                                    <div className="flex items-center gap-2">
                                       <span className="font-medium">Received:</span>
                                       <span>{format(new Date(quote.dateReceived), "PPP")}</span>
                                     </div>
