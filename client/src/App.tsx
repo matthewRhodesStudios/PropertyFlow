@@ -10,6 +10,7 @@ import Contractors from "@/pages/contractors";
 import Documents from "@/pages/documents";
 import Quotes from "@/pages/quotes";
 import Reports from "@/pages/reports";
+import Gantt from "@/pages/gantt";
 import Sidebar from "@/components/layout/sidebar";
 import TopBar from "@/components/layout/topbar";
 
@@ -26,6 +27,7 @@ function Router() {
             <Route path="/contractors" component={Contractors} />
             <Route path="/documents" component={Documents} />
             <Route path="/quotes" component={Quotes} />
+            <Route path="/gantt" component={Gantt} />
             <Route path="/reports" component={Reports} />
             <Route component={NotFound} />
           </Switch>

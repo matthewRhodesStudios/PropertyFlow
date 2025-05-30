@@ -9,6 +9,7 @@ export default function Sidebar() {
     { name: "Contractors", href: "/contractors", icon: "build" },
     { name: "Documents", href: "/documents", icon: "folder" },
     { name: "Quotes", href: "/quotes", icon: "request_quote" },
+    { name: "Timeline", href: "/gantt", icon: "timeline" },
     { name: "Reports", href: "/reports", icon: "assessment" },
   ];
 

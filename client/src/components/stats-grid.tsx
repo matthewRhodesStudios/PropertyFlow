@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/utils";
 
 export default function StatsGrid() {
   const { data: stats, isLoading } = useQuery({
@@ -33,7 +34,7 @@ export default function StatsGrid() {
     },
     {
       label: "Total Investment",
-      value: `$${stats?.totalInvestment ? parseFloat(stats.totalInvestment).toLocaleString() : 0}`,
+      value: stats?.totalInvestment ? formatCurrency(parseFloat(stats.totalInvestment)) : formatCurrency(0),
       icon: "trending_up", 
       iconColor: "text-secondary",
       bgColor: "bg-secondary/10"

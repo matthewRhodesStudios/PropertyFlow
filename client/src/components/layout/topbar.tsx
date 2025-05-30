@@ -6,6 +6,7 @@ const pageNames: Record<string, string> = {
   "/contractors": "Contractors", 
   "/documents": "Documents",
   "/quotes": "Quotes",
+  "/gantt": "Timeline",
   "/reports": "Reports"
 };
 

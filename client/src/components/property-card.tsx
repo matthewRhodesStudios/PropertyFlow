@@ -46,7 +46,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         </div>
         <div className="text-right">
           <p className="text-sm font-medium text-gray-900 font-roboto-mono">
-            ${investment.toLocaleString()}
+            {formatCurrency(investment)}
           </p>
           <p className="text-xs text-gray-500">Investment</p>
         </div>
