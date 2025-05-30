@@ -372,7 +372,11 @@ export default function Documents() {
                     variant="outline" 
                     size="sm" 
                     className="flex-1"
-                    onClick={() => window.open(document.filePath, '_blank')}
+                    onClick={() => {
+                      // Create proper document view URL
+                      const viewUrl = `/api/documents/${document.id}/view`;
+                      window.open(viewUrl, '_blank');
+                    }}
                   >
                     <span className="material-icons text-sm mr-1">visibility</span>
                     View
@@ -382,8 +386,10 @@ export default function Documents() {
                     size="sm" 
                     className="flex-1"
                     onClick={() => {
-                      const link = window.document.createElement('a');
-                      link.href = document.filePath;
+                      // Create proper download URL
+                      const downloadUrl = `/api/documents/${document.id}/download`;
+                      const link = document.createElement('a');
+                      link.href = downloadUrl;
                       link.download = document.name;
                       link.click();
                     }}

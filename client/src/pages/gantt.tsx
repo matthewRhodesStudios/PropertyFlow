@@ -571,10 +571,10 @@ export default function Gantt() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Project Timeline</h1>
-          <p className="text-gray-600 mt-1">Manage tasks and track progress across all properties</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Project Timeline</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage tasks and track progress across all properties</p>
         </div>
       </div>
 
