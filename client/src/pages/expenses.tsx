@@ -265,6 +265,7 @@ export default function Expenses() {
       supplier: expense.supplier || "",
       receiptNumber: expense.receiptNumber || "",
       vatAmount: expense.vatAmount || "",
+      taxDeductible: expense.taxDeductible || false,
       date: format(new Date(expense.date), 'yyyy-MM-dd'),
     });
     setIsDialogOpen(true);
@@ -282,6 +283,7 @@ export default function Expenses() {
       supplier: "",
       receiptNumber: "",
       vatAmount: "",
+      taxDeductible: false,
       date: new Date().toISOString().split('T')[0],
     });
     setIsDialogOpen(true);
@@ -393,6 +395,11 @@ export default function Expenses() {
                       <Badge variant="outline">
                         <Receipt className="h-3 w-3 mr-1" />
                         {expense.receiptNumber}
+                      </Badge>
+                    )}
+                    {expense.taxDeductible && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                        Tax Deductible
                       </Badge>
                     )}
                   </div>
