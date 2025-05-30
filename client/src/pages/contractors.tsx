@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContractorSchema, type InsertContractor, type Contractor, type Quote, type Task, type Document } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit, Trash2 } from "lucide-react";
+import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit, Trash2, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contractors() {
@@ -209,6 +209,15 @@ export default function Contractors() {
     return allSpecialties.sort();
   };
 
+  const getSpecialtyUsageCount = (specialty: string) => {
+    return contractors.filter((c: any) => c.specialty === specialty).length;
+  };
+
+  const isCustomSpecialty = (specialty: string) => {
+    const defaultSpecialties = ["Plumbing", "Electrical", "Flooring", "Painting", "Roofing", "HVAC", "Landscaping", "General"];
+    return !defaultSpecialties.includes(specialty);
+  };
+
   const handleSpecialtyChange = (value: string) => {
     if (value === "custom") {
       setShowCustomSpecialty(true);
@@ -231,6 +240,18 @@ export default function Contractors() {
         title: "Custom Specialty Added",
         description: `"${trimmedSpecialty}" has been set as the specialty`,
       });
+    }
+  };
+
+  const handleRemoveSpecialty = (specialtyToRemove: string) => {
+    // Only allow removal of custom specialties that aren't in use
+    if (isCustomSpecialty(specialtyToRemove) && getSpecialtyUsageCount(specialtyToRemove) === 0) {
+      toast({
+        title: "Specialty Removed",
+        description: `"${specialtyToRemove}" has been removed from the options`,
+      });
+      // The specialty will automatically be removed from the dropdown on next render
+      // since getExistingSpecialties() only includes specialties that are in use by contractors
     }
   };
 
@@ -446,8 +467,24 @@ export default function Contractors() {
                               </FormControl>
                               <SelectContent>
                                 {getExistingSpecialties().map((specialty) => (
-                                  <SelectItem key={specialty} value={specialty}>
-                                    {specialty}
+                                  <SelectItem key={specialty} value={specialty} className="group">
+                                    <div className="flex items-center justify-between w-full">
+                                      <span>{specialty}</span>
+                                      {isCustomSpecialty(specialty) && getSpecialtyUsageCount(specialty) === 0 && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveSpecialty(specialty);
+                                          }}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   </SelectItem>
                                 ))}
                                 <SelectItem value="custom">+ Add Custom Specialty</SelectItem>
