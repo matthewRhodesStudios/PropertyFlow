@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertDocumentSchema, type Document, type InsertDocument, type Property, type Contractor } from "@shared/schema";
+import { insertDocumentSchema, type Document, type InsertDocument, type Property, type Contractor, type Task, type Job, type Contact } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -32,6 +32,10 @@ export default function Documents() {
 
   const { data: contractors = [] } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
+  });
+
+  const { data: contacts = [] } = useQuery<Contact[]>({
+    queryKey: ["/api/contacts"],
   });
 
   const form = useForm<InsertDocument>({
@@ -447,6 +451,58 @@ export default function Documents() {
                           {contractors.map((contractor) => (
                             <SelectItem key={contractor.id} value={contractor.id.toString()}>
                               {contractor.name} - {contractor.company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="taskId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Task (optional)</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select task" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No task</SelectItem>
+                          {tasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id.toString()}>
+                              {task.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="jobId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subtask (optional)</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subtask" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No subtask</SelectItem>
+                          {jobs.map((job) => (
+                            <SelectItem key={job.id} value={job.id.toString()}>
+                              {job.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

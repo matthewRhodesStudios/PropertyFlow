@@ -92,6 +92,7 @@ export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id"),
   contractorId: integer("contractor_id"),
+  contactId: integer("contact_id"),
   name: text("name").notNull(),
   type: text("type").notNull(), // contract, invoice, permit, photo, etc.
   filePath: text("file_path").notNull(),
