@@ -419,92 +419,84 @@ export default function Quotes() {
                                       <span>{contractor?.name} - {contractor?.company}</span>
                                     </div>
                             
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">Received:</span>
-                              <span>{format(new Date(quote.dateReceived), "PPP")}</span>
-                            </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Received:</span>
+                                      <span>{format(new Date(quote.dateReceived), "PPP")}</span>
+                                    </div>
                             
-                            {quote.validUntil && (
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">Valid Until:</span>
-                                <span className={cn(
-                                  new Date(quote.validUntil) < new Date() ? 'text-red-600 font-medium' : ''
-                                )}>
-                                  {format(new Date(quote.validUntil), "PPP")}
-                                  {new Date(quote.validUntil) < new Date() && ' (Expired)'}
-                                </span>
-                              </div>
-                            )}
+                                    {quote.validUntil && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">Valid until:</span>
+                                        <span>{format(new Date(quote.validUntil), "PPP")}</span>
+                                      </div>
+                                    )}
                             
-                            {quote.notes && (
-                              <div className="mt-2">
-                                <span className="font-medium">Notes:</span>
-                                <p className="text-gray-600 mt-1">{quote.notes}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                                    {quote.notes && (
+                                      <div className="flex items-start gap-2">
+                                        <span className="font-medium">Notes:</span>
+                                        <span className="text-gray-600">{quote.notes}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                         
-                        <div className="flex flex-col items-end gap-3">
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600">
-                              {formatCurrency(quote.amount)}
-                            </div>
-                          </div>
+                                <div className="flex flex-col items-end gap-3">
+                                  <div className="text-right">
+                                    <div className="text-2xl font-bold text-green-600">
+                                      {formatCurrency(quote.amount)}
+                                    </div>
+                                  </div>
                           
-                          <div className="flex gap-2">
-                            {quote.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-green-500 text-green-600 hover:bg-green-50"
-                                  onClick={() => handleStatusChange(quote.id, 'accepted')}
-                                >
-                                  Accept
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-red-500 text-red-600 hover:bg-red-50"
-                                  onClick={() => handleStatusChange(quote.id, 'rejected')}
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
+                                  <div className="flex gap-2">
+                                    {quote.status === 'pending' && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="border-green-500 text-green-600 hover:bg-green-50"
+                                          onClick={() => handleStatusChange(quote.id, 'accepted')}
+                                        >
+                                          Accept
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="border-red-500 text-red-600 hover:bg-red-50"
+                                          onClick={() => handleStatusChange(quote.id, 'rejected')}
+                                        >
+                                          Reject
+                                        </Button>
+                                      </>
+                                    )}
                             
-                            {quote.status !== 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleStatusChange(quote.id, 'pending')}
-                              >
-                                Reset to Pending
-                              </Button>
-                            )}
+                                    {quote.status !== 'pending' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleStatusChange(quote.id, 'pending')}
+                                      >
+                                        Reset to Pending
+                                      </Button>
+                                    )}
                             
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-red-500 text-red-600 hover:bg-red-50"
-                              onClick={() => deleteQuoteMutation.mutate(quote.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-red-500 text-red-600 hover:bg-red-50"
+                                      onClick={() => deleteQuoteMutation.mutate(quote.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
                 })}
-                
-                {propertyQuotes.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No quotes for this property yet</p>
-                    <p className="text-sm">Add quotes for quotable tasks to get started</p>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
