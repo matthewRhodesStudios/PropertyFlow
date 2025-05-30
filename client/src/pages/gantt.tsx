@@ -222,16 +222,21 @@ export default function Gantt() {
   };
 
   const getRelativeDateDescription = (task: Task) => {
-    if (!task.dependsOnTaskId || !task.relativeDueDays) return null;
+    if (!task.dependsOnTaskId) return null;
     
     const dependencyTask = tasks.find(t => t.id === task.dependsOnTaskId);
     if (!dependencyTask) return null;
 
     const direction = task.relativeDirection || 'after';
     const days = task.relativeDueDays;
-    const timing = direction === 'before' ? 'starts' : 'completes';
     
-    return `${days} day${days !== 1 ? 's' : ''} ${direction} "${dependencyTask.title}" ${timing}`;
+    if (days && days > 0) {
+      const timing = direction === 'before' ? 'starts' : 'completes';
+      return `${days} day${days !== 1 ? 's' : ''} ${direction} "${dependencyTask.title}" ${timing}`;
+    } else {
+      // Immediate dependency (no days specified)
+      return `Immediately ${direction} "${dependencyTask.title}"`;
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -445,57 +450,56 @@ export default function Gantt() {
   const sortTasksByDependencies = (propertyTasks: Task[]): Task[] => {
     const sorted: Task[] = [];
     const visited = new Set<number>();
-    const visiting = new Set<number>();
+    const processing = new Set<number>();
 
     const visit = (task: Task) => {
-      if (visiting.has(task.id)) {
-        // Circular dependency detected, skip this dependency
+      if (processing.has(task.id)) {
+        // Circular dependency detected, skip
         return;
       }
       if (visited.has(task.id)) {
         return;
       }
 
-      visiting.add(task.id);
+      processing.add(task.id);
 
-      // If task has a dependency, visit the dependency first
-      if (task.dependsOnTaskId) {
+      // If task has a dependency, handle it based on direction
+      if (task.dependsOnTaskId && task.relativeDirection) {
         const dependencyTask = propertyTasks.find(t => t.id === task.dependsOnTaskId);
         if (dependencyTask) {
           visit(dependencyTask);
-        }
-      }
-
-      visiting.delete(task.id);
-      visited.add(task.id);
-      
-      // For "before" dependencies, the current task should come before its dependency
-      if (task.relativeDirection === 'before' && task.dependsOnTaskId) {
-        const dependencyIndex = sorted.findIndex(t => t.id === task.dependsOnTaskId);
-        if (dependencyIndex !== -1) {
-          sorted.splice(dependencyIndex, 0, task);
+          
+          if (task.relativeDirection === 'before') {
+            // Insert before the dependency task
+            const dependencyIndex = sorted.findIndex(t => t.id === task.dependsOnTaskId);
+            if (dependencyIndex !== -1) {
+              sorted.splice(dependencyIndex, 0, task);
+            } else {
+              sorted.push(task);
+            }
+          } else {
+            // Insert after the dependency task
+            const dependencyIndex = sorted.findIndex(t => t.id === task.dependsOnTaskId);
+            if (dependencyIndex !== -1) {
+              sorted.splice(dependencyIndex + 1, 0, task);
+            } else {
+              sorted.push(task);
+            }
+          }
         } else {
           sorted.push(task);
         }
       } else {
+        // No dependency, add to end
         sorted.push(task);
       }
+
+      processing.delete(task.id);
+      visited.add(task.id);
     };
 
-    // First pass: add tasks without dependencies or with "after" dependencies
-    propertyTasks
-      .filter(task => !task.dependsOnTaskId || task.relativeDirection === 'after')
-      .forEach(visit);
-
-    // Second pass: add remaining tasks with "before" dependencies
-    propertyTasks
-      .filter(task => task.dependsOnTaskId && task.relativeDirection === 'before' && !visited.has(task.id))
-      .forEach(visit);
-
-    // Third pass: add any remaining unvisited tasks
-    propertyTasks
-      .filter(task => !visited.has(task.id))
-      .forEach(visit);
+    // Process all tasks
+    propertyTasks.forEach(visit);
 
     return sorted;
   };
