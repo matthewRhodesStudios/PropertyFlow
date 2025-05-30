@@ -19,9 +19,12 @@ export const contractors = pgTable("contractors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   company: text("company"),
+  contactPerson: text("contact_person"),
   specialty: text("specialty").notNull(), // plumbing, electrical, flooring, etc.
   email: text("email"),
   phone: text("phone"),
+  website: text("website"),
+  preferredContact: text("preferred_contact").default("phone"), // phone, text, whatsapp, email
   rating: decimal("rating", { precision: 2, scale: 1 }), // 1.0-5.0
   notes: text("notes"),
 });

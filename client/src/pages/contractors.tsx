@@ -1,46 +1,65 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { insertContractorSchema, type Contractor, type InsertContractor, type Quote, type Document, type Task, type Property } from "@shared/schema";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertContractorSchema, type InsertContractor, type Contractor, type Quote, type Task, type Document } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, Phone, Mail, Building, Star, FileText, Receipt, Hammer, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Contractors() {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
-  const { data: contractors = [], isLoading } = useQuery<Contractor[]>({
+  const { data: contractors = [], isLoading } = useQuery({
     queryKey: ["/api/contractors"],
   });
 
-  const { data: quotes = [] } = useQuery<Quote[]>({
+  const { data: quotes = [] } = useQuery({
     queryKey: ["/api/quotes"],
   });
 
-  const { data: documents = [] } = useQuery<Document[]>({
-    queryKey: ["/api/documents"],
-  });
-
-  const { data: tasks = [] } = useQuery<Task[]>({
+  const { data: tasks = [] } = useQuery({
     queryKey: ["/api/tasks"],
   });
 
-  const { data: properties = [] } = useQuery<Property[]>({
+  const { data: documents = [] } = useQuery({
+    queryKey: ["/api/documents"],
+  });
+
+  const { data: properties = [] } = useQuery({
     queryKey: ["/api/properties"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: InsertContractor) => apiRequest("POST", "/api/contractors", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      setIsFormOpen(false);
+      toast({
+        title: "Success",
+        description: "Contractor added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error", 
+        description: error.message || "Failed to add contractor",
+        variant: "destructive",
+      });
+    },
   });
 
   const form = useForm<InsertContractor>({
@@ -48,175 +67,147 @@ export default function Contractors() {
     defaultValues: {
       name: "",
       company: "",
+      contactPerson: "",
       specialty: "",
-      rating: "",
       email: "",
       phone: "",
+      website: "",
+      preferredContact: "phone",
+      rating: undefined,
       notes: "",
     },
   });
 
-  const createContractorMutation = useMutation({
-    mutationFn: (data: InsertContractor) => apiRequest("POST", "/api/contractors", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
-      setIsAddDialogOpen(false);
-      form.reset();
-      toast({ title: "Contractor added successfully!" });
-    },
-    onError: () => {
-      toast({ title: "Failed to add contractor", variant: "destructive" });
-    },
-  });
-
   const onSubmit = (data: InsertContractor) => {
-    createContractorMutation.mutate(data);
+    createMutation.mutate(data);
   };
 
-  // Helper functions for filtering data by contractor
-  const getContractorQuotes = (contractorId: number) => {
-    return quotes.filter(quote => quote.contractorId === contractorId);
-  };
+  const formatCurrency = (amount: number) => `£${amount.toLocaleString()}`;
 
-  const getContractorDocuments = (contractorId: number) => {
-    return documents.filter(doc => doc.contractorId === contractorId);
-  };
-
-  const getContractorTasks = (contractorId: number) => {
-    return tasks.filter(task => task.contractorId === contractorId);
-  };
-
-  const getPropertyName = (propertyId: number | null) => {
-    if (!propertyId) return "No property";
-    const property = properties.find(p => p.id === propertyId);
+  const getPropertyName = (propertyId: number) => {
+    const property = properties.find((p: any) => p.id === propertyId);
     return property?.address || "Unknown Property";
   };
 
-  const getTotalQuoteValue = (contractorQuotes: Quote[]) => {
-    return contractorQuotes.reduce((total, quote) => {
-      return total + (quote.amount ? parseFloat(quote.amount.toString()) : 0);
-    }, 0);
+  const getContractorQuotes = (contractorId: number): Quote[] => {
+    return quotes.filter((quote: any) => quote.contractorId === contractorId);
   };
 
-  const getSpecialtyColor = (specialty: string) => {
-    const colors: Record<string, string> = {
-      plumbing: "bg-blue-100 text-blue-800",
-      electrical: "bg-yellow-100 text-yellow-800",
-      carpentry: "bg-orange-100 text-orange-800",
-      painting: "bg-green-100 text-green-800",
-      roofing: "bg-red-100 text-red-800",
-      landscaping: "bg-teal-100 text-teal-800",
-    };
-    return colors[specialty.toLowerCase()] || "bg-gray-100 text-gray-800";
+  const getContractorTasks = (contractorId: number): Task[] => {
+    return tasks.filter((task: any) => task.contractorId === contractorId);
   };
 
-  const renderStars = (rating: string | null) => {
-    if (!rating) return null;
-    const numRating = parseFloat(rating);
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      if (i <= numRating) {
-        stars.push(<span key={i} className="material-icons text-yellow-400 text-sm">star</span>);
-      } else if (i - 0.5 <= numRating) {
-        stars.push(<span key={i} className="material-icons text-yellow-400 text-sm">star_half</span>);
-      } else {
-        stars.push(<span key={i} className="material-icons text-gray-300 text-sm">star_border</span>);
-      }
-    }
-    return <div className="flex items-center">{stars}</div>;
+  const getContractorDocuments = (contractorId: number): Document[] => {
+    return documents.filter((doc: any) => doc.contractorId === contractorId);
   };
 
-  const getFileIcon = (filePath: string, fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '');
-    
-    if (isImage) {
-      return (
-        <img 
-          src={filePath} 
-          alt={fileName}
-          className="w-10 h-10 object-cover rounded-lg border"
-          onError={(e) => {
-            // Fallback to file icon if image fails to load
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const fallbackDiv = document.createElement('div');
-            fallbackDiv.className = 'w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center';
-            fallbackDiv.innerHTML = '<svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>';
-            target.parentNode?.appendChild(fallbackDiv);
-          }}
-        />
-      );
-    }
-    
+  const getTotalQuoteValue = (quotes: Quote[]) => {
+    return quotes.reduce((total, quote) => total + parseFloat(quote.amount?.toString() || "0"), 0);
+  };
+
+  const renderStars = (rating: number) => {
     return (
-      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-        <FileText className="h-5 w-5 text-primary" />
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+          />
+        ))}
       </div>
     );
   };
 
-  // Group contractors by specialty
-  const groupContractorsBySpecialty = () => {
-    const grouped = contractors.reduce((acc, contractor) => {
-      const specialty = contractor.specialty || 'Other';
-      if (!acc[specialty]) {
-        acc[specialty] = [];
-      }
-      acc[specialty].push(contractor);
-      return acc;
-    }, {} as Record<string, Contractor[]>);
+  const getSpecialtyColor = (specialty: string) => {
+    const colors: Record<string, string> = {
+      "Plumbing": "bg-blue-100 text-blue-800",
+      "Electrical": "bg-yellow-100 text-yellow-800",
+      "Flooring": "bg-brown-100 text-brown-800",
+      "Painting": "bg-purple-100 text-purple-800",
+      "Roofing": "bg-gray-100 text-gray-800",
+      "HVAC": "bg-green-100 text-green-800",
+      "Landscaping": "bg-green-200 text-green-800",
+      "General": "bg-slate-100 text-slate-800"
+    };
+    return colors[specialty] || "bg-gray-100 text-gray-800";
+  };
 
-    // Sort specialties alphabetically, but put 'Other' at the end
-    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      if (a === 'Other') return 1;
-      if (b === 'Other') return -1;
-      return a.localeCompare(b);
+  const getContactMethodIcon = (method: string) => {
+    switch (method) {
+      case "phone": return <Phone className="h-4 w-4" />;
+      case "email": return <Mail className="h-4 w-4" />;
+      case "text": return <MessageSquare className="h-4 w-4" />;
+      case "whatsapp": return <MessageSquare className="h-4 w-4 text-green-600" />;
+      default: return <Phone className="h-4 w-4" />;
+    }
+  };
+
+  const groupContractorsBySpecialty = () => {
+    const specialtyGroups: Record<string, Contractor[]> = {};
+    
+    contractors.forEach((contractor: Contractor) => {
+      if (!specialtyGroups[contractor.specialty]) {
+        specialtyGroups[contractor.specialty] = [];
+      }
+      specialtyGroups[contractor.specialty].push(contractor);
     });
 
-    return sortedKeys.map(specialty => ({
+    return Object.entries(specialtyGroups).map(([specialty, contractors]) => ({
       specialty,
-      contractors: grouped[specialty]
+      contractors
     }));
+  };
+
+  const getFileIcon = (filePath: string, fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '');
+    
+    if (isImage) {
+      return (
+        <div className="w-10 h-10 rounded overflow-hidden bg-gray-100">
+          <img 
+            src={filePath} 
+            alt={fileName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></div>';
+              }
+            }}
+          />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+        <FileText className="h-6 w-6 text-primary" />
+      </div>
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Contractors</h1>
-          <div className="w-32 h-10 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-5 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Contractors</h1>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Contractors</h1>
+          <p className="text-muted-foreground">Manage your network of professional contractors</p>
+        </div>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary-dark">
-              <span className="material-icons mr-2">person_add</span>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
               Add Contractor
             </Button>
           </DialogTrigger>
@@ -225,14 +216,14 @@ export default function Contractors() {
               <DialogTitle>Add New Contractor</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Name *</FormLabel>
+                        <FormLabel>Contractor Name</FormLabel>
                         <FormControl>
                           <Input placeholder="John Smith" {...field} />
                         </FormControl>
@@ -240,105 +231,166 @@ export default function Contractors() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="company"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company (optional)</FormLabel>
+                        <FormLabel>Company Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Smith Construction Ltd" {...field} />
+                          <Input placeholder="Smith Construction Ltd" {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
+                  <FormField
+                    control={form.control}
+                    name="contactPerson"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact Person</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Site Manager, Office Manager, etc." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="specialty"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Specialty *</FormLabel>
+                        <FormLabel>Specialty</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select specialty" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Plumbing">Plumbing</SelectItem>
+                            <SelectItem value="Electrical">Electrical</SelectItem>
+                            <SelectItem value="Flooring">Flooring</SelectItem>
+                            <SelectItem value="Painting">Painting</SelectItem>
+                            <SelectItem value="Roofing">Roofing</SelectItem>
+                            <SelectItem value="HVAC">HVAC</SelectItem>
+                            <SelectItem value="Landscaping">Landscaping</SelectItem>
+                            <SelectItem value="General">General</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="Plumbing, Electrical, etc." {...field} />
+                          <Input placeholder="07123 456789" {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="john@smithconstruction.co.uk" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input placeholder="www.smithconstruction.co.uk" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="preferredContact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preferred Contact Method</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="phone">Phone Call</SelectItem>
+                            <SelectItem value="text">Text Message</SelectItem>
+                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="rating"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Rating (optional)</FormLabel>
+                        <FormLabel>Rating (1-5)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
                             min="1" 
                             max="5" 
-                            step="0.5" 
+                            step="0.1" 
                             placeholder="4.5" 
                             {...field} 
+                            value={field.value || ""} 
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email (optional)</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone (optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 234 567 8900" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Notes (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Additional notes about the contractor..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
-
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Additional notes about the contractor..." 
+                          {...field} 
+                          value={field.value || ""} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createContractorMutation.isPending}>
-                    {createContractorMutation.isPending ? "Adding..." : "Add Contractor"}
+                  <Button type="submit" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "Adding..." : "Add Contractor"}
                   </Button>
                 </div>
               </form>
@@ -348,27 +400,24 @@ export default function Contractors() {
       </div>
 
       {contractors.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="material-icons text-3xl text-gray-400">person_add</span>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No contractors yet</h3>
-            <p className="text-gray-500 mb-6">Get started by adding your first contractor.</p>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary-dark">
-              <span className="material-icons mr-2">person_add</span>
+        <Card className="text-center py-12">
+          <CardContent>
+            <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No contractors yet</h3>
+            <p className="text-muted-foreground mb-4">Start building your network of professional contractors</p>
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
               Add Contractor
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Contractors organized by specialty */}
           {groupContractorsBySpecialty().map(({ specialty, contractors: specialtyContractors }) => (
             <div key={specialty} className="space-y-4">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold text-gray-800">{specialty}</h2>
-                <Badge variant="secondary" className="text-sm">
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
                   {specialtyContractors.length} contractor{specialtyContractors.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -390,6 +439,9 @@ export default function Contractors() {
                           {contractor.company && (
                             <p className="text-sm text-gray-500">{contractor.company}</p>
                           )}
+                          {contractor.contactPerson && (
+                            <p className="text-xs text-gray-400">Contact: {contractor.contactPerson}</p>
+                          )}
                         </div>
                         <div className="flex items-center">
                           {selectedContractor?.id === contractor.id ? (
@@ -409,19 +461,35 @@ export default function Contractors() {
                           {contractor.rating && renderStars(contractor.rating)}
                         </div>
                         
-                        {contractor.email && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <span className="material-icons text-sm mr-2">email</span>
-                            {contractor.email}
-                          </div>
-                        )}
-                        
-                        {contractor.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <span className="material-icons text-sm mr-2">phone</span>
-                            {contractor.phone}
-                          </div>
-                        )}
+                        <div className="space-y-2">
+                          {contractor.phone && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Phone className="h-4 w-4 mr-2" />
+                              {contractor.phone}
+                            </div>
+                          )}
+                          
+                          {contractor.email && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Mail className="h-4 w-4 mr-2" />
+                              {contractor.email}
+                            </div>
+                          )}
+                          
+                          {contractor.website && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Globe className="h-4 w-4 mr-2" />
+                              {contractor.website}
+                            </div>
+                          )}
+
+                          {contractor.preferredContact && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              {getContactMethodIcon(contractor.preferredContact)}
+                              <span className="ml-2 capitalize">Prefers {contractor.preferredContact}</span>
+                            </div>
+                          )}
+                        </div>
                         
                         {contractor.notes && (
                           <p className="text-sm text-gray-600 truncate">{contractor.notes}</p>
@@ -615,7 +683,7 @@ export default function Contractors() {
                 </Card>
               )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
