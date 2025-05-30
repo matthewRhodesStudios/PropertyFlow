@@ -1,7 +1,7 @@
-import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Task, InsertTask, Document, InsertDocument, Contact, InsertContact } from "@shared/schema";
+import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { properties, contractors, quotes, tasks, documents, contacts } from "@shared/schema";
+import { properties, contractors, quotes, jobs, tasks, documents, contacts } from "@shared/schema";
 
 export interface IStorage {
   // Properties

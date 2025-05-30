@@ -29,6 +29,7 @@ export const contractors = pgTable("contractors", {
 export const quotes = pgTable("quotes", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull(),
+  jobId: integer("job_id"),
   contractorId: integer("contractor_id").notNull(),
   service: text("service").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
@@ -38,9 +39,22 @@ export const quotes = pgTable("quotes", {
   notes: text("notes"),
 });
 
+export const jobs = pgTable("jobs", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("planning"), // planning, active, completed, on_hold
+  startDate: timestamp("start_date"),
+  targetEndDate: timestamp("target_end_date"),
+  budget: text("budget"),
+  notes: text("notes"),
+});
+
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull(),
+  jobId: integer("job_id"),
   title: text("title").notNull(),
   description: text("description"),
   dueDate: timestamp("due_date"),
@@ -84,6 +98,10 @@ export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
 });
 
+export const insertJobSchema = createInsertSchema(jobs).omit({
+  id: true,
+});
+
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
 });
@@ -105,6 +123,9 @@ export type InsertContractor = z.infer<typeof insertContractorSchema>;
 
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
+
+export type Job = typeof jobs.$inferSelect;
+export type InsertJob = z.infer<typeof insertJobSchema>;
 
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
