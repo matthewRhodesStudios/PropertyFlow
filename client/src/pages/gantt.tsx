@@ -1026,6 +1026,18 @@ export default function Gantt() {
                                   <Plus className="h-4 w-4 mr-2" />
                                   Add Job
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedTaskId(task.id);
+                                    setSelectedPropertyId(property.id);
+                                    setNewEventOpen(true);
+                                  }}
+                                >
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  Schedule Event
+                                </Button>
                               </div>
 
                               {/* Quote List */}
@@ -1061,6 +1073,51 @@ export default function Gantt() {
                                   })}
                                 </div>
                               )}
+
+                              {/* Events List */}
+                              {(() => {
+                                const taskEvents = events.filter(event => event.taskId === task.id);
+                                return taskEvents.length > 0 && (
+                                  <div className="space-y-2 mb-4">
+                                    <h5 className="text-sm font-medium text-gray-700">Scheduled Events</h5>
+                                    {taskEvents.map((event) => {
+                                      const contact = contacts.find(c => c.id === event.contactId);
+                                      const contractor = contractors.find(c => c.id === event.contractorId);
+                                      return (
+                                        <div key={event.id} className="flex items-center justify-between p-2 bg-purple-50 rounded border-l-4 border-purple-300">
+                                          <div className="flex items-center gap-3">
+                                            <div className={cn(
+                                              "w-2 h-2 rounded-full",
+                                              event.status === 'completed' ? 'bg-green-500' :
+                                              event.status === 'cancelled' ? 'bg-red-500' :
+                                              'bg-blue-500'
+                                            )}></div>
+                                            <div>
+                                              <span className="text-sm font-medium">{event.title}</span>
+                                              <div className="text-xs text-gray-500">
+                                                {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
+                                                {(contact || contractor) && (
+                                                  <span className="ml-2">
+                                                    with {contact?.name || contractor?.name}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <Badge className={cn(
+                                            "text-xs",
+                                            event.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                            event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                            'bg-blue-100 text-blue-800'
+                                          )}>
+                                            {event.type}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
 
                               {/* Job List */}
                               <div className="space-y-2">
@@ -1941,6 +1998,140 @@ export default function Gantt() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Scheduling Dialog */}
+      <Dialog open={newEventOpen} onOpenChange={setNewEventOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Schedule Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Event Title</label>
+              <Input
+                name="title"
+                placeholder="e.g., Property Survey"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Event Type</label>
+              <Select name="type" defaultValue="survey">
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select event type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="survey">Survey</SelectItem>
+                  <SelectItem value="viewing">Viewing</SelectItem>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="appointment">Appointment</SelectItem>
+                  <SelectItem value="inspection">Inspection</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Date & Time</label>
+                <Input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  defaultValue={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Duration (minutes)</label>
+                <Input
+                  type="number"
+                  name="duration"
+                  placeholder="60"
+                  defaultValue="60"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Location</label>
+              <Input
+                name="location"
+                placeholder="Property address or meeting location"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Contact (optional)</label>
+              <Select name="contactId">
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select contact" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No contact</SelectItem>
+                  {contacts.map((contact) => (
+                    <SelectItem key={contact.id} value={contact.id.toString()}>
+                      {contact.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                name="notes"
+                placeholder="Additional notes..."
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setNewEventOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={(e) => {
+                  const form = e.currentTarget.closest('div')?.parentElement as HTMLFormElement;
+                  if (form) {
+                    const formData = new FormData();
+                    const inputs = form.querySelectorAll('input, select, textarea');
+                    inputs.forEach((input: any) => {
+                      if (input.name && input.value) {
+                        formData.append(input.name, input.value);
+                      }
+                    });
+                    
+                    const scheduledAt = new Date((form.querySelector('[name="scheduledAt"]') as HTMLInputElement).value);
+                    const duration = parseInt((form.querySelector('[name="duration"]') as HTMLInputElement).value) || 60;
+                    const contactValue = (form.querySelector('[name="contactId"]') as HTMLSelectElement).value;
+                    
+                    createEventMutation.mutate({
+                      title: (form.querySelector('[name="title"]') as HTMLInputElement).value,
+                      description: '',
+                      type: (form.querySelector('[name="type"]') as HTMLSelectElement).value,
+                      scheduledAt: scheduledAt,
+                      duration: duration,
+                      location: (form.querySelector('[name="location"]') as HTMLInputElement).value || '',
+                      status: 'scheduled',
+                      notes: (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value || '',
+                      propertyId: selectedPropertyId!,
+                      taskId: selectedTaskId!,
+                      contactId: contactValue ? parseInt(contactValue) : undefined,
+                    });
+                  }
+                }}
+                disabled={createEventMutation.isPending}
+              >
+                Schedule Event
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
