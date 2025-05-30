@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertTaskSchema, type Task, type InsertTask, type Property, type Contractor } from "@shared/schema";
+import { insertTaskSchema, type Task, type InsertTask, type Property, type Contractor, type Contact } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -29,6 +29,10 @@ export default function Gantt() {
 
   const { data: contractors = [] } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
+  });
+
+  const { data: contacts = [] } = useQuery<Contact[]>({
+    queryKey: ["/api/contacts"],
   });
 
   const form = useForm<InsertTask>({
@@ -334,6 +338,84 @@ export default function Gantt() {
               </Form>
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+
+      {/* Professional Contacts */}
+      <div className="mb-8">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Professional Contacts</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <span className="material-icons mr-2 text-primary">gavel</span>
+                Solicitors
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contacts.filter(c => c.role === 'solicitor').length > 0 ? (
+                <div className="space-y-2">
+                  {contacts.filter(c => c.role === 'solicitor').map((contact) => (
+                    <div key={contact.id} className="text-sm">
+                      <div className="font-medium">{contact.name}</div>
+                      <div className="text-gray-600">{contact.company}</div>
+                      <div className="text-gray-500">{contact.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No solicitors added</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <span className="material-icons mr-2 text-primary">analytics</span>
+                Surveyors
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contacts.filter(c => c.type === 'surveyor').length > 0 ? (
+                <div className="space-y-2">
+                  {contacts.filter(c => c.type === 'surveyor').map((contact) => (
+                    <div key={contact.id} className="text-sm">
+                      <div className="font-medium">{contact.name}</div>
+                      <div className="text-gray-600">{contact.company}</div>
+                      <div className="text-gray-500">{contact.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No surveyors added</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <span className="material-icons mr-2 text-primary">real_estate_agent</span>
+                Estate Agents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {contacts.filter(c => c.type === 'estate_agent').length > 0 ? (
+                <div className="space-y-2">
+                  {contacts.filter(c => c.type === 'estate_agent').map((contact) => (
+                    <div key={contact.id} className="text-sm">
+                      <div className="font-medium">{contact.name}</div>
+                      <div className="text-gray-600">{contact.company}</div>
+                      <div className="text-gray-500">{contact.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No estate agents added</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 

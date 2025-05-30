@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatCurrencyInput } from "@/lib/utils";
 
 export default function Quotes() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -230,12 +230,44 @@ export default function Quotes() {
 
                   <FormField
                     control={form.control}
+                    name="jobId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project/Job (optional)</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {jobs.map((job) => (
+                              <SelectItem key={job.id} value={job.id.toString()}>
+                                {job.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="amount"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Amount</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="15000" {...field} />
+                          <Input 
+                            placeholder="£15,000"
+                            value={field.value ? formatCurrencyInput(field.value.toString()) : ''}
+                            onChange={(e) => {
+                              const numericValue = e.target.value.replace(/[^\d.]/g, '');
+                              field.onChange(numericValue ? parseFloat(numericValue) : 0);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
