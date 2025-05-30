@@ -335,11 +335,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Document not found" });
       }
       
-      // For demo purposes, create a placeholder response
-      // In a real app, you would serve the actual file from storage
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${document.name}"`);
-      res.send(`Document: ${document.name}\nType: ${document.type}\nThis is a placeholder for the actual document content.`);
+      // Return document information as JSON for display in the application
+      res.json({
+        id: document.id,
+        name: document.name,
+        type: document.type,
+        uploadDate: document.uploadDate,
+        filePath: document.filePath,
+        content: `This is a sample document: ${document.name}\n\nDocument Type: ${document.type}\nFile Path: ${document.filePath}\n\nThis document would contain the actual file content in a real implementation.`
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to view document" });
     }

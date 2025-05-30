@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, Download, FileText } from "lucide-react";
 
 export default function Documents() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [viewingDocument, setViewingDocument] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: documents = [], isLoading } = useQuery<Document[]>({
@@ -323,7 +325,7 @@ export default function Documents() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredDocuments.map((document) => (
             <Card key={document.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
@@ -372,13 +374,29 @@ export default function Documents() {
                     variant="outline" 
                     size="sm" 
                     className="flex-1"
-                    onClick={() => {
-                      // Create proper document view URL
-                      const viewUrl = `/api/documents/${document.id}/view`;
-                      window.open(viewUrl, '_blank');
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/documents/${document.id}/view`);
+                        if (response.ok) {
+                          const docData = await response.json();
+                          setViewingDocument(docData);
+                        } else {
+                          toast({
+                            title: "Error",
+                            description: "Failed to load document",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to load document",
+                          variant: "destructive",
+                        });
+                      }
                     }}
                   >
-                    <span className="material-icons text-sm mr-1">visibility</span>
+                    <Eye className="w-4 h-4 mr-1" />
                     View
                   </Button>
                   <Button 
@@ -386,7 +404,6 @@ export default function Documents() {
                     size="sm" 
                     className="flex-1"
                     onClick={() => {
-                      // Create proper download URL
                       const downloadUrl = `/api/documents/${document.id}/download`;
                       const link = window.document.createElement('a');
                       link.href = downloadUrl;
@@ -394,7 +411,7 @@ export default function Documents() {
                       link.click();
                     }}
                   >
-                    <span className="material-icons text-sm mr-1">download</span>
+                    <Download className="w-4 h-4 mr-1" />
                     Download
                   </Button>
                 </div>

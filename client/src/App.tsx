@@ -21,7 +21,7 @@ function Router() {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-surface-variant">
+        <main className="flex-1 overflow-y-auto bg-surface-variant px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <Switch>
             <Route path="/" component={Dashboard} />
             <Route path="/properties" component={Properties} />
