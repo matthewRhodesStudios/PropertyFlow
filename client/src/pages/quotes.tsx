@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, PoundSterling, Edit2, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, PoundSterling, Edit2, Trash2, Clock, CheckCircle, XCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Quotes() {
   const [newQuoteOpen, setNewQuoteOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [collapsedTasks, setCollapsedTasks] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Queries
@@ -115,8 +116,8 @@ export default function Quotes() {
     setEditingQuote(quote);
     form.reset({
       propertyId: quote.propertyId,
-      taskId: quote.taskId,
-      contractorId: quote.contractorId,
+      taskId: quote.taskId || undefined,
+      contractorId: quote.contractorId || undefined,
       service: quote.service,
       amount: quote.amount,
       dateReceived: new Date(quote.dateReceived),
@@ -125,6 +126,26 @@ export default function Quotes() {
       notes: quote.notes || "",
     });
     setNewQuoteOpen(true);
+  };
+
+  const toggleTaskCollapse = (taskKey: string) => {
+    const newCollapsed = new Set(collapsedTasks);
+    if (newCollapsed.has(taskKey)) {
+      newCollapsed.delete(taskKey);
+    } else {
+      newCollapsed.add(taskKey);
+    }
+    setCollapsedTasks(newCollapsed);
+  };
+
+  const getQuoteStatusCounts = (quotes: Quote[]) => {
+    const counts = { pending: 0, accepted: 0, rejected: 0 };
+    quotes.forEach(quote => {
+      if (quote.status === 'accepted') counts.accepted++;
+      else if (quote.status === 'rejected') counts.rejected++;
+      else counts.pending++;
+    });
+    return counts;
   };
 
   const handleStatusChange = (quoteId: number, newStatus: string) => {
@@ -196,7 +217,7 @@ export default function Quotes() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create New Quote</DialogTitle>
+              <DialogTitle>{editingQuote ? "Edit Quote" : "Create New Quote"}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -410,10 +431,21 @@ export default function Quotes() {
               <div className="space-y-6 p-6">
                 {Object.entries(taskGroups).map(([taskId, taskQuotes]) => {
                   const task = tasks.find(t => t.id === parseInt(taskId));
+                  const taskKey = `${propertyId}-${taskId}`;
+                  const isCollapsed = collapsedTasks.has(taskKey);
+                  const statusCounts = getQuoteStatusCounts(taskQuotes);
                   
                   return (
                     <div key={taskId} className="space-y-3">
-                      <div className="flex items-center gap-3 border-b pb-2">
+                      <div 
+                        className="flex items-center gap-3 border-b pb-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={() => toggleTaskCollapse(taskKey)}
+                      >
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        )}
                         <h3 className="font-semibold text-lg">
                           {task ? task.title : 'General Quotes'}
                         </h3>
@@ -422,12 +454,28 @@ export default function Quotes() {
                             {task.category.replace('_', ' ')}
                           </Badge>
                         )}
-                        <span className="text-sm text-gray-500">
-                          {taskQuotes.length} quote{taskQuotes.length !== 1 ? 's' : ''}
-                        </span>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 ml-auto">
+                          <span>{taskQuotes.length} total</span>
+                          {statusCounts.pending > 0 && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                              {statusCounts.pending} pending
+                            </Badge>
+                          )}
+                          {statusCounts.accepted > 0 && (
+                            <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                              {statusCounts.accepted} accepted
+                            </Badge>
+                          )}
+                          {statusCounts.rejected > 0 && (
+                            <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                              {statusCounts.rejected} rejected
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       
-                      <div className="space-y-3">
+                      {!isCollapsed && (
+                        <div className="space-y-3">
                         {taskQuotes.map((quote) => {
                           const contractor = getContractorForQuote(quote);
 
@@ -440,16 +488,21 @@ export default function Quotes() {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-2">
                                     {getStatusIcon(quote.status)}
-                                    <h3 className="font-semibold text-lg">{quote.service}</h3>
+                                    <h3 className="font-semibold text-lg">{contractor?.name || 'Unknown Contractor'}</h3>
                                     <Badge className={getStatusColor(quote.status)}>
                                       {quote.status}
                                     </Badge>
                                   </div>
                                   
+                                  <div className="mb-3">
+                                    <span className="text-sm font-medium text-gray-600">Service: </span>
+                                    <span className="text-sm">{quote.service}</span>
+                                  </div>
+                                  
                                   <div className="space-y-2 text-sm">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium">Contractor:</span>
-                                      <span>{contractor?.name} - {contractor?.company}</span>
+                                      <span className="font-medium">Company:</span>
+                                      <span>{contractor?.company || 'Unknown Company'}</span>
                                     </div>
                             
                                     <div className="flex items-center gap-2">
@@ -515,6 +568,15 @@ export default function Quotes() {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                      onClick={() => handleEdit(quote)}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
                                       className="border-red-500 text-red-600 hover:bg-red-50"
                                       onClick={() => deleteQuoteMutation.mutate(quote.id)}
                                     >
@@ -526,7 +588,8 @@ export default function Quotes() {
                             </div>
                           );
                         })}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
