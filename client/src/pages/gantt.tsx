@@ -919,6 +919,23 @@ export default function Gantt() {
                                 <div className="text-xs text-gray-500">
                                   {taskJobs.filter(j => j.status === 'completed').length}/{taskJobs.length} jobs
                                 </div>
+                                {taskQuotes.length > 0 && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {taskQuotes.filter(q => q.status === 'accepted').length > 0 ? (
+                                      <span className="text-green-600">
+                                        {taskQuotes.filter(q => q.status === 'accepted').length} accepted
+                                      </span>
+                                    ) : taskQuotes.filter(q => q.status === 'pending').length > 0 ? (
+                                      <span className="text-yellow-600">
+                                        {taskQuotes.filter(q => q.status === 'pending').length} pending
+                                      </span>
+                                    ) : (
+                                      <span className="text-red-600">
+                                        {taskQuotes.filter(q => q.status === 'rejected').length} rejected
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <div className="w-20 h-2 bg-gray-200 rounded-full">
                                 <div 
