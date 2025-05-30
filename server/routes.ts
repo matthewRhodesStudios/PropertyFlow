@@ -192,6 +192,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/tasks/:taskId/jobs", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const jobs = await storage.getJobsByTask(taskId);
+      res.json(jobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch jobs for task" });
+    }
+  });
+
   app.post("/api/jobs", async (req, res) => {
     try {
       const validatedData = insertJobSchema.parse(req.body);
