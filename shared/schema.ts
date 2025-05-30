@@ -165,6 +165,12 @@ export const insertQuoteInquirySchema = createInsertSchema(quoteInquiries).omit(
 export const insertJobSchema = createInsertSchema(jobs).omit({
   id: true,
   createdAt: true,
+}).extend({
+  dueDate: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
 });
 
 export const insertTaskSchema = createInsertSchema(tasks).omit({
