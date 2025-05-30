@@ -348,7 +348,7 @@ export default function Quotes() {
                             value={field.value ? formatCurrencyInput(field.value) : ''}
                             onChange={(e) => {
                               const numericValue = e.target.value.replace(/[^\d.]/g, '');
-                              field.onChange(numericValue || '0');
+                              field.onChange(numericValue || '');
                             }}
                           />
                         </FormControl>
