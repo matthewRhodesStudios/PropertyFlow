@@ -148,6 +148,29 @@ export default function Quotes() {
     return counts;
   };
 
+  const getTaskHeaderColor = (quotes: Quote[]) => {
+    const counts = getQuoteStatusCounts(quotes);
+    const totalQuotes = quotes.length;
+    
+    // If no quotes, red
+    if (totalQuotes === 0) {
+      return 'bg-red-50 hover:bg-red-100 border-red-200';
+    }
+    
+    // If at least 1 quote accepted, green
+    if (counts.accepted >= 1) {
+      return 'bg-green-50 hover:bg-green-100 border-green-200';
+    }
+    
+    // If all quotes are rejected, red
+    if (counts.rejected === totalQuotes) {
+      return 'bg-red-50 hover:bg-red-100 border-red-200';
+    }
+    
+    // Otherwise (pending quotes exist), yellow
+    return 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200';
+  };
+
   const handleStatusChange = (quoteId: number, newStatus: string) => {
     updateQuoteStatusMutation.mutate({ id: quoteId, status: newStatus });
   };
@@ -444,7 +467,7 @@ export default function Quotes() {
                   return (
                     <div key={taskId} className="space-y-3">
                       <div 
-                        className="flex items-center gap-3 border-b pb-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        className={`flex items-center gap-3 border-b pb-2 cursor-pointer p-2 rounded border-2 ${getTaskHeaderColor(taskQuotes)}`}
                         onClick={() => toggleTaskCollapse(taskKey)}
                       >
                         {isCollapsed ? (
