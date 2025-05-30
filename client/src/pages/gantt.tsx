@@ -119,6 +119,14 @@ export default function Gantt() {
     },
   });
 
+  const updateJobMutation = useMutation({
+    mutationFn: ({ id, ...data }: { id: number } & any) =>
+      apiRequest("PATCH", `/api/jobs/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+    },
+  });
+
   const deleteTaskMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/tasks/${id}`),
     onSuccess: () => {
@@ -261,13 +269,23 @@ export default function Gantt() {
   };
 
   const onSubmitTask = (data: any) => {
+    console.log('Task form data:', data);
+    console.log('Due date type:', dueDateType);
+    
     const processedData = { ...data };
     if (dueDateType === 'relative') {
       processedData.dueDate = null; // Clear absolute date when using relative
+      // Ensure relativeDirection is set
+      if (!processedData.relativeDirection) {
+        processedData.relativeDirection = 'after';
+      }
     } else {
       processedData.dependsOnTaskId = null;
       processedData.relativeDueDays = null;
+      processedData.relativeDirection = null;
     }
+    
+    console.log('Processed task data:', processedData);
     createTaskMutation.mutate(processedData);
   };
 
@@ -945,6 +963,18 @@ export default function Gantt() {
                                           Due {format(new Date(job.dueDate), 'MMM d')}
                                         </span>
                                       )}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const newStatus = job.status === 'completed' ? 'pending' : 
+                                                         job.status === 'pending' ? 'in_progress' : 'completed';
+                                          updateJobMutation.mutate({ id: job.id, status: newStatus });
+                                        }}
+                                      >
+                                        {job.status === 'completed' ? 'Reopen' : 
+                                         job.status === 'pending' ? 'Start' : 'Complete'}
+                                      </Button>
                                     </div>
                                   </div>
                                 ))}
