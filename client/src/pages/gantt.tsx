@@ -28,6 +28,8 @@ export default function Gantt() {
   const [editTaskOpen, setEditTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newJobOpen, setNewJobOpen] = useState(false);
+  const [editJobOpen, setEditJobOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
@@ -356,6 +358,23 @@ export default function Gantt() {
       relativeDirection: task.relativeDirection || "after",
     });
     setEditTaskOpen(true);
+  };
+
+  const startEditJob = (job: Job) => {
+    setEditingJob(job);
+    jobForm.reset({
+      taskId: job.taskId,
+      propertyId: job.propertyId,
+      name: job.name,
+      description: job.description || "",
+      type: job.type,
+      status: job.status,
+      dueDate: job.dueDate ? format(new Date(job.dueDate), "yyyy-MM-dd") : undefined,
+      contractorId: job.contractorId || undefined,
+      contactId: job.contactId || undefined,
+      notes: job.notes || "",
+    });
+    setEditJobOpen(true);
   };
 
   const onSubmitEditTask = (data: any) => {

@@ -448,7 +448,7 @@ export default function Quotes() {
         </Card>
       )}
 
-      {Object.entries(quotesByPropertyAndTask).map(([propertyId, taskGroups]) => {
+      {Object.entries(quotableTasksByProperty).map(([propertyId, propertyTasks]) => {
         const property = properties.find(p => p.id === parseInt(propertyId));
         if (!property) return null;
 
@@ -461,20 +461,20 @@ export default function Quotes() {
                   <Badge variant="outline" className="border-2">{property.type}</Badge>
                 </div>
                 <div className="text-sm text-gray-600">
-                  {Object.values(taskGroups).flat().length} quote{Object.values(taskGroups).flat().length !== 1 ? 's' : ''}
+                  {propertyTasks.length} quotable task{propertyTasks.length !== 1 ? 's' : ''}
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="space-y-6 p-6">
-                {Object.entries(taskGroups).map(([taskId, taskQuotes]) => {
-                  const task = tasks.find(t => t.id === parseInt(taskId));
-                  const taskKey = `${propertyId}-${taskId}`;
+                {propertyTasks.map((task) => {
+                  const taskQuotes = quotesByPropertyAndTask[parseInt(propertyId)]?.[task.id] || [];
+                  const taskKey = `${propertyId}-${task.id}`;
                   const isCollapsed = collapsedTasks.has(taskKey);
                   const statusCounts = getQuoteStatusCounts(taskQuotes);
                   
                   return (
-                    <div key={taskId} className="space-y-3">
+                    <div key={task.id} className="space-y-3">
                       <div 
                         className={`flex items-center gap-3 border-b pb-2 cursor-pointer p-2 rounded border-2 ${getTaskHeaderColor(taskQuotes)}`}
                         onClick={() => toggleTaskCollapse(taskKey)}
