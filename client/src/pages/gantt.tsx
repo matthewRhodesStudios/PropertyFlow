@@ -125,6 +125,7 @@ export default function Gantt() {
       dueDate: undefined,
       dependsOnTaskId: undefined,
       relativeDueDays: undefined,
+      relativeDirection: "after",
     },
   });
 
@@ -187,6 +188,19 @@ export default function Gantt() {
     const due = new Date(dueDate);
     const diffTime = due.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getRelativeDateDescription = (task: Task) => {
+    if (!task.dependsOnTaskId || !task.relativeDueDays) return null;
+    
+    const dependencyTask = tasks.find(t => t.id === task.dependsOnTaskId);
+    if (!dependencyTask) return null;
+
+    const direction = task.relativeDirection || 'after';
+    const days = task.relativeDueDays;
+    const timing = direction === 'before' ? 'starts' : 'completes';
+    
+    return `${days} day${days !== 1 ? 's' : ''} ${direction} "${dependencyTask.title}" ${timing}`;
   };
 
   const getCategoryColor = (category: string) => {
@@ -942,7 +956,7 @@ export default function Gantt() {
                     )}
                   />
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <FormField
                       control={taskForm.control}
                       name="dependsOnTaskId"
@@ -968,29 +982,59 @@ export default function Gantt() {
                       )}
                     />
 
-                    <FormField
-                      control={taskForm.control}
-                      name="relativeDueDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Days After Completion</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center gap-2">
-                              <Input 
-                                type="number" 
-                                min="0" 
-                                placeholder="0" 
-                                {...field} 
-                                value={field.value || ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                              />
-                              <Clock className="h-4 w-4 text-gray-400" />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={taskForm.control}
+                        name="relativeDueDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Number of Days</FormLabel>
+                            <FormControl>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number" 
+                                  min="0" 
+                                  placeholder="0" 
+                                  {...field} 
+                                  value={field.value || ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                />
+                                <Clock className="h-4 w-4 text-gray-400" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={taskForm.control}
+                        name="relativeDirection"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Timing</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || "after"}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select timing" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="before">Before</SelectItem>
+                                <SelectItem value="after">After</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex items-end">
+                        <p className="text-sm text-gray-600 pb-2">
+                          {taskForm.watch('relativeDirection') === 'before' ? 'task starts' : 'task completes'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
