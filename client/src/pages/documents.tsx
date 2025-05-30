@@ -432,147 +432,174 @@ export default function Documents() {
 
         {/* Edit Document Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Document</DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="border-b pb-4">
+              <DialogTitle className="text-xl font-semibold flex items-center">
+                <Edit2 className="h-5 w-5 mr-2 text-blue-600" />
+                Edit Document
+              </DialogTitle>
             </DialogHeader>
             <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-                <FormField
-                  control={editForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Document Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter document name..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-8 pt-4">
+                
+                {/* Basic Information Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    Document Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={editForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold">Document Name</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter document name..." 
+                              {...field} 
+                              className="focus:ring-2 focus:ring-blue-500"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={editForm.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Document Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="contract">Contract</SelectItem>
-                          <SelectItem value="certificate">Certificate</SelectItem>
-                          <SelectItem value="report">Report</SelectItem>
-                          <SelectItem value="insurance">Insurance</SelectItem>
-                          <SelectItem value="legal">Legal</SelectItem>
-                          <SelectItem value="financial">Financial</SelectItem>
-                          <SelectItem value="inspection">Inspection</SelectItem>
-                          <SelectItem value="quote">Quote</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={editForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold">Document Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
+                                <SelectValue placeholder="Select document type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="contract">📋 Contract</SelectItem>
+                              <SelectItem value="certificate">🏆 Certificate</SelectItem>
+                              <SelectItem value="report">📊 Report</SelectItem>
+                              <SelectItem value="insurance">🛡️ Insurance</SelectItem>
+                              <SelectItem value="legal">⚖️ Legal</SelectItem>
+                              <SelectItem value="financial">💰 Financial</SelectItem>
+                              <SelectItem value="inspection">🔍 Inspection</SelectItem>
+                              <SelectItem value="quote">💵 Quote</SelectItem>
+                              <SelectItem value="other">📄 Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
-                <FormField
-                  control={editForm.control}
-                  name="propertyId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Property (optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select property" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No property</SelectItem>
-                          {properties.map((property) => (
-                            <SelectItem key={property.id} value={property.id.toString()}>
-                              {property.address}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Assignment Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    Document Assignments
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={editForm.control}
+                      name="propertyId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold">Property</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                            <FormControl>
+                              <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
+                                <SelectValue placeholder="Select property" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">🚫 No property</SelectItem>
+                              {properties.map((property) => (
+                                <SelectItem key={property.id} value={property.id.toString()}>
+                                  🏠 {property.address}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={editForm.control}
-                  name="contractorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contractor (optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select contractor" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No contractor</SelectItem>
-                          {contractors.map((contractor) => (
-                            <SelectItem key={contractor.id} value={contractor.id.toString()}>
-                              {contractor.name} - {contractor.company}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={editForm.control}
+                      name="contractorId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold">Contractor</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                            <FormControl>
+                              <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
+                                <SelectValue placeholder="Select contractor" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">🚫 No contractor</SelectItem>
+                              {contractors.map((contractor) => (
+                                <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                                  👷 {contractor.name} - {contractor.company}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={editForm.control}
-                  name="contactId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact (optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select contact" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No contact</SelectItem>
-                          {contacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id.toString()}>
-                              {contact.name} - {contact.role}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={editForm.control}
+                      name="contactId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold">Contact</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                            <FormControl>
+                              <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
+                                <SelectValue placeholder="Select contact" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">🚫 No contact</SelectItem>
+                              {contacts.map((contact) => (
+                                <SelectItem key={contact.id} value={contact.id.toString()}>
+                                  👤 {contact.name} - {contact.role}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
 
-                <div className="col-span-2">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Task Assignments (optional)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Task Assignment Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                    Task Assignments
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Task</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Task</label>
                       <Select defaultValue="none">
-                        <SelectTrigger>
+                        <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
                           <SelectValue placeholder="Select task" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">No task</SelectItem>
+                          <SelectItem value="none">🚫 No task</SelectItem>
                           {tasks.map((task) => (
                             <SelectItem key={task.id} value={task.id.toString()}>
-                              {task.title}
+                              📋 {task.title}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -580,16 +607,16 @@ export default function Documents() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Subtask</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Subtask</label>
                       <Select defaultValue="none">
-                        <SelectTrigger>
+                        <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
                           <SelectValue placeholder="Select subtask" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">No subtask</SelectItem>
+                          <SelectItem value="none">🚫 No subtask</SelectItem>
                           {jobs.map((job) => (
                             <SelectItem key={job.id} value={job.id.toString()}>
-                              {job.name}
+                              ⚡ {job.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
