@@ -372,7 +372,66 @@ export default function Gantt() {
     setDragOverTaskId(null);
   };
 
-  // Group tasks by property
+  // Function to sort tasks based on dependencies
+  const sortTasksByDependencies = (propertyTasks: Task[]): Task[] => {
+    const sorted: Task[] = [];
+    const visited = new Set<number>();
+    const visiting = new Set<number>();
+
+    const visit = (task: Task) => {
+      if (visiting.has(task.id)) {
+        // Circular dependency detected, skip this dependency
+        return;
+      }
+      if (visited.has(task.id)) {
+        return;
+      }
+
+      visiting.add(task.id);
+
+      // If task has a dependency, visit the dependency first
+      if (task.dependsOnTaskId) {
+        const dependencyTask = propertyTasks.find(t => t.id === task.dependsOnTaskId);
+        if (dependencyTask) {
+          visit(dependencyTask);
+        }
+      }
+
+      visiting.delete(task.id);
+      visited.add(task.id);
+      
+      // For "before" dependencies, the current task should come before its dependency
+      if (task.relativeDirection === 'before' && task.dependsOnTaskId) {
+        const dependencyIndex = sorted.findIndex(t => t.id === task.dependsOnTaskId);
+        if (dependencyIndex !== -1) {
+          sorted.splice(dependencyIndex, 0, task);
+        } else {
+          sorted.push(task);
+        }
+      } else {
+        sorted.push(task);
+      }
+    };
+
+    // First pass: add tasks without dependencies or with "after" dependencies
+    propertyTasks
+      .filter(task => !task.dependsOnTaskId || task.relativeDirection === 'after')
+      .forEach(visit);
+
+    // Second pass: add remaining tasks with "before" dependencies
+    propertyTasks
+      .filter(task => task.dependsOnTaskId && task.relativeDirection === 'before' && !visited.has(task.id))
+      .forEach(visit);
+
+    // Third pass: add any remaining unvisited tasks
+    propertyTasks
+      .filter(task => !visited.has(task.id))
+      .forEach(visit);
+
+    return sorted;
+  };
+
+  // Group and sort tasks by property
   const tasksByProperty = tasks.reduce((acc, task) => {
     if (!acc[task.propertyId]) {
       acc[task.propertyId] = [];
@@ -380,6 +439,11 @@ export default function Gantt() {
     acc[task.propertyId].push(task);
     return acc;
   }, {} as Record<number, Task[]>);
+
+  // Sort tasks within each property based on dependencies
+  Object.keys(tasksByProperty).forEach(propertyId => {
+    tasksByProperty[parseInt(propertyId)] = sortTasksByDependencies(tasksByProperty[parseInt(propertyId)]);
+  });
 
   // Get available dependency tasks for the current property
   const getAvailableDependencyTasks = (propertyId: number, excludeTaskId?: number) => {
@@ -680,7 +744,14 @@ export default function Gantt() {
                                   ) : (
                                     <ChevronRight className="h-5 w-5 text-gray-500" />
                                   )}
-                                  <h3 className="text-lg font-semibold">{task.title}</h3>
+                                  <div className="flex flex-col">
+                                    <h3 className="text-lg font-semibold">{task.title}</h3>
+                                    {getRelativeDateDescription(task) && (
+                                      <p className="text-sm text-blue-600 italic">
+                                        {getRelativeDateDescription(task)}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                                 <Badge className={getCategoryColor(task.category)}>
                                   {task.category.replace('_', ' ')}
