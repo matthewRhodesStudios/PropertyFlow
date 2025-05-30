@@ -377,9 +377,9 @@ export default function Gantt() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {contacts.filter(c => c.type === 'surveyor').length > 0 ? (
+              {contacts.filter(c => c.role === 'surveyor').length > 0 ? (
                 <div className="space-y-2">
-                  {contacts.filter(c => c.type === 'surveyor').map((contact) => (
+                  {contacts.filter(c => c.role === 'surveyor').map((contact) => (
                     <div key={contact.id} className="text-sm">
                       <div className="font-medium">{contact.name}</div>
                       <div className="text-gray-600">{contact.company}</div>
@@ -401,9 +401,9 @@ export default function Gantt() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {contacts.filter(c => c.type === 'estate_agent').length > 0 ? (
+              {contacts.filter(c => c.role === 'estate_agent').length > 0 ? (
                 <div className="space-y-2">
-                  {contacts.filter(c => c.type === 'estate_agent').map((contact) => (
+                  {contacts.filter(c => c.role === 'estate_agent').map((contact) => (
                     <div key={contact.id} className="text-sm">
                       <div className="font-medium">{contact.name}</div>
                       <div className="text-gray-600">{contact.company}</div>

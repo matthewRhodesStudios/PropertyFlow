@@ -74,6 +74,17 @@ export default function Quotes() {
     },
   });
 
+  const deleteQuoteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/quotes/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      toast({ title: "Quote deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete quote", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: InsertQuote) => {
     createQuoteMutation.mutate(data);
   };
@@ -452,6 +463,24 @@ export default function Quotes() {
                     </Button>
                   </div>
                 )}
+                
+                {/* Delete button - always visible */}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this quote?")) {
+                        deleteQuoteMutation.mutate(quote.id);
+                      }
+                    }}
+                    disabled={deleteQuoteMutation.isPending}
+                  >
+                    <span className="material-icons text-sm mr-1">delete</span>
+                    Delete Quote
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
