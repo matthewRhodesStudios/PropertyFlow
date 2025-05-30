@@ -31,6 +31,8 @@ export default function Properties() {
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
+      city: "",
+      postcode: "",
       type: "",
       purchasePrice: "0",
       renovationBudget: "0",
@@ -46,6 +48,8 @@ export default function Properties() {
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
+      city: "",
+      postcode: "",
       type: "",
       purchasePrice: "0",
       renovationBudget: "0",
