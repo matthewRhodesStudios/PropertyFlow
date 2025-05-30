@@ -65,6 +65,11 @@ export interface IStorage {
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
   deleteExpense(id: number): Promise<boolean>;
+
+  // Document Assignments
+  getDocumentAssignments(documentId: number): Promise<DocumentAssignment[]>;
+  createDocumentAssignment(assignment: InsertDocumentAssignment): Promise<DocumentAssignment>;
+  deleteDocumentAssignment(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -348,6 +353,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteExpense(id: number): Promise<boolean> {
     const result = await db.delete(expenses).where(eq(expenses.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getDocumentAssignments(documentId: number): Promise<DocumentAssignment[]> {
+    return await db.select().from(documentAssignments).where(eq(documentAssignments.documentId, documentId));
+  }
+
+  async createDocumentAssignment(assignment: InsertDocumentAssignment): Promise<DocumentAssignment> {
+    const [created] = await db
+      .insert(documentAssignments)
+      .values(assignment)
+      .returning();
+    return created;
+  }
+
+  async deleteDocumentAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(documentAssignments).where(eq(documentAssignments.id, id));
     return result.rowCount > 0;
   }
 }

@@ -96,6 +96,14 @@ export const documents = pgTable("documents", {
   tags: text("tags").array(),
 });
 
+export const documentAssignments = pgTable("document_assignments", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull(),
+  entityType: text("entity_type").notNull(), // quote, task, contact, contractor
+  entityId: integer("entity_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -171,6 +179,11 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
   date: z.string().transform((str) => new Date(str)),
 });
 
+export const insertDocumentAssignmentSchema = createInsertSchema(documentAssignments).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
@@ -198,3 +211,6 @@ export type InsertContact = z.infer<typeof insertContactSchema>;
 
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+
+export type DocumentAssignment = typeof documentAssignments.$inferSelect;
+export type InsertDocumentAssignment = z.infer<typeof insertDocumentAssignmentSchema>;
