@@ -24,6 +24,7 @@ export default function Contractors() {
   const [editingContractor, setEditingContractor] = useState<Contractor | null>(null);
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
+  const [removedSpecialties, setRemovedSpecialties] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
 
@@ -201,7 +202,7 @@ export default function Contractors() {
     const allSpecialties = [...defaultSpecialties];
     
     existingSpecialties.forEach(specialty => {
-      if (!defaultSpecialties.includes(specialty)) {
+      if (!defaultSpecialties.includes(specialty) && !removedSpecialties.includes(specialty)) {
         allSpecialties.push(specialty);
       }
     });
@@ -246,12 +247,11 @@ export default function Contractors() {
   const handleRemoveSpecialty = (specialtyToRemove: string) => {
     // Only allow removal of custom specialties that aren't in use
     if (isCustomSpecialty(specialtyToRemove) && getSpecialtyUsageCount(specialtyToRemove) === 0) {
+      setRemovedSpecialties(prev => [...prev, specialtyToRemove]);
       toast({
         title: "Specialty Removed",
         description: `"${specialtyToRemove}" has been removed from the options`,
       });
-      // The specialty will automatically be removed from the dropdown on next render
-      // since getExistingSpecialties() only includes specialties that are in use by contractors
     }
   };
 
@@ -490,11 +490,6 @@ export default function Contractors() {
                                 <SelectItem value="custom">+ Add Custom Specialty</SelectItem>
                               </SelectContent>
                             </Select>
-                            {field.value && !getExistingSpecialties().includes(field.value) && (
-                              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                                Custom specialty set: "{field.value}"
-                              </div>
-                            )}
                           </div>
                         ) : (
                           <div className="flex gap-2">
