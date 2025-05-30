@@ -153,12 +153,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: number): Promise<boolean> {
     try {
-      const result = await db.delete(quotes).where(eq(quotes.id, id));
-      console.log(`Delete result for quote ${id}:`, result);
-      return true; // Always return true since the operation completed
+      await db.delete(quotes).where(eq(quotes.id, id));
+      return true;
     } catch (error) {
       console.error(`Error deleting quote ${id}:`, error);
-      throw error;
+      return false;
     }
   }
 

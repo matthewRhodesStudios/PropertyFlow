@@ -100,6 +100,11 @@ export default function Quotes() {
   });
 
   const onSubmit = async (data: InsertQuote) => {
+    // Ensure amount is not empty
+    if (!data.amount || data.amount.trim() === '') {
+      data.amount = '0';
+    }
+    
     // If creating a new job, create it first
     if (isCreatingNewJob && newJobName.trim()) {
       try {
