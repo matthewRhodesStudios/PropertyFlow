@@ -80,6 +80,7 @@ export default function Quotes() {
     mutationFn: (id: number) => apiRequest("DELETE", `/api/quotes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      queryClient.refetchQueries({ queryKey: ["/api/quotes"] });
       toast({ title: "Quote deleted successfully" });
     },
     onError: () => {
@@ -344,10 +345,10 @@ export default function Quotes() {
                         <FormControl>
                           <Input 
                             placeholder="£15,000"
-                            value={field.value ? formatCurrencyInput(field.value.toString()) : ''}
+                            value={field.value ? formatCurrencyInput(field.value) : ''}
                             onChange={(e) => {
                               const numericValue = e.target.value.replace(/[^\d.]/g, '');
-                              field.onChange(numericValue ? parseFloat(numericValue) : 0);
+                              field.onChange(numericValue || '0');
                             }}
                           />
                         </FormControl>
@@ -470,7 +471,7 @@ export default function Quotes() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg font-roboto-mono">
-                      ${parseFloat(quote.amount).toLocaleString()}
+                      {formatCurrency(quote.amount)}
                     </CardTitle>
                     <p className="text-sm text-gray-600 mt-1">{quote.service}</p>
                   </div>

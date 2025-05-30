@@ -153,7 +153,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: number): Promise<boolean> {
     const result = await db.delete(quotes).where(eq(quotes.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getJobs(): Promise<Job[]> {
