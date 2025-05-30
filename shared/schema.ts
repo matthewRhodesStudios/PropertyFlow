@@ -122,6 +122,7 @@ export const expenses = pgTable("expenses", {
   supplier: text("supplier"),
   receiptNumber: text("receipt_number"),
   vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }),
+  taxDeductible: boolean("tax_deductible").notNull().default(false),
   date: timestamp("date").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

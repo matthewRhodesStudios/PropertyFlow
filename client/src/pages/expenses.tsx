@@ -37,6 +37,7 @@ const formSchema = z.object({
   receiptNumber: z.string().optional(),
   vatAmount: z.string().optional(),
   vatRate: z.string().optional(),
+  taxDeductible: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -64,6 +65,7 @@ export default function Expenses() {
       customSupplier: "",
       receiptNumber: "",
       vatAmount: "",
+      taxDeductible: false,
       date: new Date().toISOString().split('T')[0],
     },
   });
@@ -230,6 +232,7 @@ export default function Expenses() {
         : data.customSupplier || null,
       receiptNumber: data.receiptNumber || null,
       vatAmount: data.vatAmount || null,
+      taxDeductible: data.taxDeductible || false,
       date: data.date,
     };
     
