@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertPropertySchema, insertContractorSchema, insertQuoteSchema, insertJobSchema,
-  insertTaskSchema, insertDocumentSchema, insertContactSchema, insertExpenseSchema 
+  insertTaskSchema, insertDocumentSchema, insertContactSchema, insertExpenseSchema, insertEventSchema 
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -527,6 +527,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Events routes
+  app.get("/api/events", async (req, res) => {
+    try {
+      const events = await storage.getEvents();
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.get("/api/events/property/:propertyId", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      const events = await storage.getEventsByProperty(propertyId);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events by property:", error);
+      res.status(500).json({ error: "Failed to fetch events by property" });
+    }
+  });
+
+  app.get("/api/events/task/:taskId", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const events = await storage.getEventsByTask(taskId);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events by task:", error);
+      res.status(500).json({ error: "Failed to fetch events by task" });
+    }
+  });
+
+  app.post("/api/events", async (req, res) => {
+    try {
+      const validation = insertEventSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid event data",
+          details: validation.error.issues 
+        });
+      }
+      
+      const event = await storage.createEvent(validation.data);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      res.status(500).json({ error: "Failed to create event" });
+    }
+  });
+
+  app.patch("/api/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const event = await storage.updateEvent(id, req.body);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: "Failed to update event" });
+    }
+  });
+
+  app.delete("/api/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteEvent(id);
+      if (!success) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      res.status(500).json({ error: "Failed to delete event" });
     }
   });
 

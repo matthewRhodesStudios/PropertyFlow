@@ -1,7 +1,7 @@
-import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact, Expense, InsertExpense, DocumentAssignment, InsertDocumentAssignment } from "@shared/schema";
+import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact, Expense, InsertExpense, DocumentAssignment, InsertDocumentAssignment, Event, InsertEvent } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { properties, contractors, quotes, jobs, tasks, documents, contacts, expenses, documentAssignments } from "@shared/schema";
+import { properties, contractors, quotes, jobs, tasks, documents, contacts, expenses, documentAssignments, events } from "@shared/schema";
 
 export interface IStorage {
   // Properties
@@ -70,6 +70,15 @@ export interface IStorage {
   getDocumentAssignments(documentId: number): Promise<DocumentAssignment[]>;
   createDocumentAssignment(assignment: InsertDocumentAssignment): Promise<DocumentAssignment>;
   deleteDocumentAssignment(id: number): Promise<boolean>;
+
+  // Events
+  getEvents(): Promise<Event[]>;
+  getEventsByProperty(propertyId: number): Promise<Event[]>;
+  getEventsByTask(taskId: number): Promise<Event[]>;
+  getEvent(id: number): Promise<Event | undefined>;
+  createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event | undefined>;
+  deleteEvent(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -370,6 +379,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDocumentAssignment(id: number): Promise<boolean> {
     const result = await db.delete(documentAssignments).where(eq(documentAssignments.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getEvents(): Promise<Event[]> {
+    return await db.select().from(events).orderBy(events.scheduledAt);
+  }
+
+  async getEventsByProperty(propertyId: number): Promise<Event[]> {
+    return await db.select().from(events).where(eq(events.propertyId, propertyId)).orderBy(events.scheduledAt);
+  }
+
+  async getEventsByTask(taskId: number): Promise<Event[]> {
+    return await db.select().from(events).where(eq(events.taskId, taskId)).orderBy(events.scheduledAt);
+  }
+
+  async getEvent(id: number): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event || undefined;
+  }
+
+  async createEvent(event: InsertEvent): Promise<Event> {
+    const [created] = await db.insert(events).values(event).returning();
+    return created;
+  }
+
+  async updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event | undefined> {
+    const [updated] = await db.update(events).set(event).where(eq(events.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteEvent(id: number): Promise<boolean> {
+    const result = await db.delete(events).where(eq(events.id, id));
     return result.rowCount > 0;
   }
 }
