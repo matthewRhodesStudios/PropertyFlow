@@ -324,7 +324,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExpenses(): Promise<Expense[]> {
-    return await db.select().from(expenses).orderBy(desc(expenses.date));
+    return await db.select().from(expenses).orderBy(desc(expenses.id));
   }
 
   async getExpensesByProperty(propertyId: number): Promise<Expense[]> {
