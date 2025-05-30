@@ -109,6 +109,23 @@ export const contacts = pgTable("contacts", {
   propertyId: integer("property_id"), // can be linked to specific property
 });
 
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull().references(() => properties.id),
+  taskId: integer("task_id").references(() => tasks.id),
+  jobId: integer("job_id").references(() => jobs.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  category: text("category").notNull(), // materials, labor, professional_fees, legal, utilities, etc.
+  paymentMethod: text("payment_method"), // cash, card, transfer, cheque
+  supplier: text("supplier"),
+  receiptNumber: text("receipt_number"),
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }),
+  date: timestamp("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
@@ -146,6 +163,11 @@ export const insertContactSchema = createInsertSchema(contacts).omit({
   id: true,
 });
 
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
@@ -170,3 +192,6 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 
 export type Contact = typeof contacts.$inferSelect;
 export type InsertContact = z.infer<typeof insertContactSchema>;
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;

@@ -221,6 +221,12 @@ export default function Gantt() {
     return Math.round((completedJobs.length / taskJobs.length) * 100);
   };
 
+  const isTaskFullyCompleted = (task: Task) => {
+    const taskJobs = getTaskJobs(task.id);
+    if (taskJobs.length === 0) return false;
+    return taskJobs.every(job => job.status === 'completed');
+  };
+
   const getDaysUntilDue = (dueDate: Date | null) => {
     if (!dueDate) return null;
     const today = new Date();
@@ -825,7 +831,10 @@ export default function Gantt() {
                       </div>
 
                       <Collapsible open={isExpanded} onOpenChange={() => toggleTask(task.id)}>
-                        <div className="ml-16 p-6 border-b border-gray-100">
+                        <div className={cn(
+                          "ml-16 p-6 border-b border-gray-100",
+                          isTaskFullyCompleted(task) ? "bg-green-50 border-green-200" : ""
+                        )}>
                           <CollapsibleTrigger className="w-full">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
