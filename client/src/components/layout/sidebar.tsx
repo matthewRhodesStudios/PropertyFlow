@@ -32,8 +32,8 @@ export default function Sidebar() {
         <nav className="flex-1 px-4 py-6 space-y-2">
           {navigation.map((item) => (
             <Link key={item.name} href={item.href}>
-              <a
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              <div
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                   isActive(item.href)
                     ? "bg-primary/10 text-primary"
                     : "text-gray-700 hover:bg-gray-100"
@@ -41,7 +41,7 @@ export default function Sidebar() {
               >
                 <span className="material-icons mr-3 text-xl">{item.icon}</span>
                 {item.name}
-              </a>
+              </div>
             </Link>
           ))}
         </nav>

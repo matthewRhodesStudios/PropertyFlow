@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Reports() {
   const { data: properties = [], isLoading: propertiesLoading } = useQuery<Property[]>({
@@ -171,14 +172,14 @@ export default function Reports() {
       </div>
 
       {/* Financial Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">Total Investment</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-gray-900 font-roboto-mono">
-              ${financials.totalInvestment.toLocaleString()}
+            <p className="text-xl sm:text-2xl font-semibold text-gray-900 font-roboto-mono">
+              {formatCurrency(financials.totalInvestment)}
             </p>
           </CardContent>
         </Card>
@@ -188,8 +189,8 @@ export default function Reports() {
             <CardTitle className="text-sm font-medium text-gray-600">Projected Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-gray-900 font-roboto-mono">
-              ${financials.totalProjectedValue.toLocaleString()}
+            <p className="text-xl sm:text-2xl font-semibold text-gray-900 font-roboto-mono">
+              {formatCurrency(financials.totalProjectedValue)}
             </p>
           </CardContent>
         </Card>
@@ -199,10 +200,10 @@ export default function Reports() {
             <CardTitle className="text-sm font-medium text-gray-600">Projected Profit</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-semibold font-roboto-mono ${
+            <p className={`text-xl sm:text-2xl font-semibold font-roboto-mono ${
               financials.projectedProfit >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {financials.projectedProfit >= 0 ? '+' : ''}${financials.projectedProfit.toLocaleString()}
+              {financials.projectedProfit >= 0 ? '+' : ''}{formatCurrency(Math.abs(financials.projectedProfit))}
             </p>
           </CardContent>
         </Card>

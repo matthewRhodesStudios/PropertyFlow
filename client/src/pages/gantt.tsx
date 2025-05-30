@@ -851,48 +851,58 @@ export default function Gantt() {
 
                       <Collapsible open={isExpanded} onOpenChange={() => toggleTask(task.id)}>
                         <div className={cn(
-                          "ml-16 p-6 border-b border-gray-100",
+                          "ml-8 sm:ml-16 p-4 sm:p-6 border-b border-gray-100",
                           isTaskFullyCompleted(task) ? "bg-green-50 border-green-200" : ""
                         )}>
                           <CollapsibleTrigger className="w-full">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <div className="flex items-center gap-2">
                                   {isExpanded ? (
                                     <ChevronDown className="h-5 w-5 text-gray-500" />
                                   ) : (
                                     <ChevronRight className="h-5 w-5 text-gray-500" />
                                   )}
-                                  <h3 className="text-lg font-semibold">{task.title}</h3>
+                                  <h3 className="text-base sm:text-lg font-semibold">{task.title}</h3>
                                 </div>
-                                <Badge className={getCategoryColor(task.category)}>
-                                  {task.category.replace('_', ' ')}
-                                </Badge>
-                                <Badge className={getStatusColor(task.status)}>
-                                  {task.status.replace('_', ' ')}
-                                </Badge>
-                                {getRelativeDateDescription(task) && (
-                                  <Badge className="bg-blue-100 text-blue-800">
-                                    {getRelativeDateDescription(task)}
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge className={getCategoryColor(task.category)}>
+                                    {task.category.replace('_', ' ')}
                                   </Badge>
-                                )}
-                                {task.dueDate && (
-                                  <div className={cn(
-                                    "flex items-center gap-1 text-sm px-2 py-1 rounded",
-                                    daysUntilDue && daysUntilDue < 0 ? 'bg-red-100 text-red-800' :
-                                    daysUntilDue && daysUntilDue <= 7 ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-gray-100 text-gray-600'
-                                  )}>
-                                    <Calendar className="h-3 w-3" />
-                                    {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} days overdue` :
-                                     daysUntilDue === 0 ? 'Due today' :
-                                     daysUntilDue === 1 ? 'Due tomorrow' :
-                                     `${daysUntilDue} days left`}
-                                  </div>
-                                )}
+                                  <Badge className={getStatusColor(task.status)}>
+                                    {task.status.replace('_', ' ')}
+                                  </Badge>
+                                  {getRelativeDateDescription(task) && (
+                                    <Badge className="bg-blue-100 text-blue-800">
+                                      {getRelativeDateDescription(task)}
+                                    </Badge>
+                                  )}
+                                  {task.dueDate && (
+                                    <div className={cn(
+                                      "flex items-center gap-1 text-xs sm:text-sm px-2 py-1 rounded",
+                                      daysUntilDue && daysUntilDue < 0 ? 'bg-red-100 text-red-800' :
+                                      daysUntilDue && daysUntilDue <= 7 ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-600'
+                                    )}>
+                                      <Calendar className="h-3 w-3" />
+                                      <span className="hidden sm:inline">
+                                        {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} days overdue` :
+                                         daysUntilDue === 0 ? 'Due today' :
+                                         daysUntilDue === 1 ? 'Due tomorrow' :
+                                         `${daysUntilDue} days left`}
+                                      </span>
+                                      <span className="sm:hidden">
+                                        {daysUntilDue && daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` :
+                                         daysUntilDue === 0 ? 'Today' :
+                                         daysUntilDue === 1 ? 'Tomorrow' :
+                                         `${daysUntilDue}d left`}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
+                              <div className="flex items-center gap-4 self-start sm:self-center">
+                                <div className="text-left sm:text-right">
                                   <div className="text-sm font-medium">{progress}% Complete</div>
                                   <div className="text-xs text-gray-500">
                                     {taskJobs.filter(j => j.status === 'completed').length}/{taskJobs.length} jobs
