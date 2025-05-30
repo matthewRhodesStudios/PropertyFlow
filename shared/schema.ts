@@ -5,6 +5,10 @@ import { z } from "zod";
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   address: text("address").notNull(),
+  city: text("city"),
+  postcode: text("postcode"),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
   type: text("type").notNull(), // e.g., "2-bed apartment", "3-bed house"
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
   renovationBudget: decimal("renovation_budget", { precision: 12, scale: 2 }).notNull(),
