@@ -278,29 +278,71 @@ export default function Gantt() {
   };
 
   // Drag and drop handlers
+  const [dragOverTaskId, setDragOverTaskId] = useState<number | null>(null);
+
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId.toString());
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, taskId: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverTaskId(taskId);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're leaving the container, not a child
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverTaskId(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetTaskId: number) => {
     e.preventDefault();
     const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
+    
+    setDragOverTaskId(null);
+    setDraggedTaskId(null);
+    
     if (draggedId && draggedId !== targetTaskId) {
       console.log(`Reorder task ${draggedId} to position of task ${targetTaskId}`);
-      // Implementation would require a reorder API endpoint
+      
+      // For now, let's reorder locally to show it works
+      // In a real app, you'd call an API endpoint to save the order
+      const propertyId = tasks.find(t => t.id === draggedId)?.propertyId;
+      if (!propertyId) return;
+      
+      const propertyTasks = tasksByProperty[propertyId] || [];
+      const draggedTask = propertyTasks.find(t => t.id === draggedId);
+      const targetIndex = propertyTasks.findIndex(t => t.id === targetTaskId);
+      
+      if (draggedTask && targetIndex !== -1) {
+        // Update the tasks array locally (this would normally be done via API)
+        const newTasks = [...tasks];
+        const draggedIndex = newTasks.findIndex(t => t.id === draggedId);
+        const newTargetIndex = newTasks.findIndex(t => t.id === targetTaskId);
+        
+        if (draggedIndex !== -1 && newTargetIndex !== -1) {
+          // Remove dragged task and insert at new position
+          const [removed] = newTasks.splice(draggedIndex, 1);
+          newTasks.splice(newTargetIndex, 0, removed);
+          
+          // Update the query cache to reflect the change
+          queryClient.setQueryData(["/api/tasks"], newTasks);
+        }
+      }
     }
-    setDraggedTaskId(null);
   };
 
   const handleDragEnd = () => {
     setDraggedTaskId(null);
+    setDragOverTaskId(null);
   };
 
   // Group tasks by property
@@ -570,12 +612,18 @@ export default function Gantt() {
                     <div 
                       key={task.id} 
                       className={cn(
-                        "relative transition-opacity",
-                        draggedTaskId === task.id ? "opacity-50" : ""
+                        "relative transition-all duration-200",
+                        draggedTaskId === task.id ? "opacity-50 scale-95" : "",
+                        dragOverTaskId === task.id ? "border-l-4 border-blue-500 bg-blue-50" : ""
                       )}
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
-                      onDragOver={handleDragOver}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        setDragOverTaskId(task.id);
+                      }}
+                      onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, task.id)}
                       onDragEnd={handleDragEnd}
                     >
