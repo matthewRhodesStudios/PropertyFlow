@@ -442,6 +442,84 @@ export default function Gantt() {
         </Dialog>
       </div>
 
+      {/* Project-Wide Professional Contacts */}
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {/* Solicitors Section */}
+        <Card className="border-2 border-blue-200">
+          <CardHeader className="bg-blue-50">
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <Briefcase className="h-5 w-5" />
+              Project Solicitors
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              {contacts.filter(contact => contact.role === 'solicitor').map((solicitor) => (
+                <div key={solicitor.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <div>
+                    <h4 className="font-medium">{solicitor.name}</h4>
+                    {solicitor.company && <p className="text-sm text-gray-600">{solicitor.company}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {solicitor.phone && (
+                      <Button variant="ghost" size="sm">
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {solicitor.email && (
+                      <Button variant="ghost" size="sm">
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {contacts.filter(contact => contact.role === 'solicitor').length === 0 && (
+                <p className="text-gray-500 text-center py-4">No solicitors added yet</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Estate Agents Section */}
+        <Card className="border-2 border-green-200">
+          <CardHeader className="bg-green-50">
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <User className="h-5 w-5" />
+              Project Estate Agents
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              {contacts.filter(contact => contact.role === 'estate_agent').map((agent) => (
+                <div key={agent.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <div>
+                    <h4 className="font-medium">{agent.name}</h4>
+                    {agent.company && <p className="text-sm text-gray-600">{agent.company}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {agent.phone && (
+                      <Button variant="ghost" size="sm">
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {agent.email && (
+                      <Button variant="ghost" size="sm">
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {contacts.filter(contact => contact.role === 'estate_agent').length === 0 && (
+                <p className="text-gray-500 text-center py-4">No estate agents added yet</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Property Tasks Timeline */}
       {(properties as Property[]).map((property) => {
         const propertyTasks = tasksByProperty[property.id] || [];
         if (propertyTasks.length === 0) return null;
@@ -535,16 +613,40 @@ export default function Gantt() {
                                     style={{ width: `${progress}%` }}
                                   ></div>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditTask(task);
-                                  }}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="cursor-grab active:cursor-grabbing hover:bg-gray-100"
+                                    title="Drag to reorder"
+                                  >
+                                    <GripVertical className="h-4 w-4 text-gray-400" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditTask(task);
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm(`Are you sure you want to delete the task "${task.title}"? This will also delete all associated jobs and cannot be undone.`)) {
+                                        deleteTaskMutation.mutate(task.id);
+                                      }
+                                    }}
+                                    disabled={deleteTaskMutation.isPending}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </CollapsibleTrigger>
