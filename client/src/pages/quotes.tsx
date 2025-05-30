@@ -98,7 +98,7 @@ export default function Quotes() {
   };
 
   // Get unique trades from contractors
-  const uniqueTrades = [...new Set(contractors.map(c => c.specialty))];
+  const uniqueTrades = Array.from(new Set(contractors.map(c => c.specialty)));
   
   const filteredQuotes = quotes.filter(quote => {
     const statusMatch = selectedStatus === "all" || quote.status === selectedStatus;
@@ -287,7 +287,7 @@ export default function Quotes() {
                       <FormItem className="col-span-2">
                         <FormLabel>Notes (optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Additional notes about the quote..." {...field} />
+                          <Textarea placeholder="Additional notes about the quote..." {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

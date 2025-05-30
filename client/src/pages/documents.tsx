@@ -212,7 +212,7 @@ export default function Documents() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No property</SelectItem>
+                            <SelectItem value="none">No property</SelectItem>
                             {properties.map((property) => (
                               <SelectItem key={property.id} value={property.id.toString()}>
                                 {property.address}

@@ -310,7 +310,7 @@ export default function Gantt() {
                         <FormItem className="col-span-2">
                           <FormLabel>Description</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Task details, notes, or communications..." {...field} />
+                            <Textarea placeholder="Task details, notes, or communications..." {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
