@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,6 +93,35 @@ export default function Expenses() {
     queryKey: ["/api/expenses"],
   });
 
+  // Watch for quote selection changes and auto-populate fields
+  const watchQuoteId = form.watch("quoteId");
+  
+  useEffect(() => {
+    if (watchQuoteId && quotes.length > 0) {
+      const selectedQuote = quotes.find(q => q.id === parseInt(watchQuoteId));
+      if (selectedQuote) {
+        setSelectedQuote(selectedQuote);
+        
+        // Auto-populate property
+        form.setValue("propertyId", selectedQuote.propertyId.toString());
+        
+        // Auto-populate title with quote service
+        form.setValue("title", selectedQuote.service);
+        
+        // Auto-populate amount
+        form.setValue("amount", selectedQuote.amount);
+        
+        // If quote has a contractor, auto-select it
+        if (selectedQuote.contractorId) {
+          form.setValue("contractorType", "existing");
+          form.setValue("contractorId", selectedQuote.contractorId.toString());
+        }
+      }
+    } else {
+      setSelectedQuote(null);
+    }
+  }, [watchQuoteId, quotes, form]);
+
   const addExpenseMutation = useMutation({
     mutationFn: (data: InsertExpense) => apiRequest("POST", "/api/expenses", data),
     onSuccess: () => {
@@ -103,6 +132,36 @@ export default function Expenses() {
       toast({
         title: "Success",
         description: "Expense saved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save expense",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addExpenseWithQuoteUpdateMutation = useMutation({
+    mutationFn: async ({ expenseData, quoteId }: { expenseData: InsertExpense; quoteId: number }) => {
+      // Create the expense first
+      const expense = await apiRequest("POST", "/api/expenses", expenseData);
+      
+      // Then update the quote status to "paid"
+      await apiRequest("PATCH", `/api/quotes/${quoteId}`, { status: "paid" });
+      
+      return expense;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      setIsDialogOpen(false);
+      setEditingExpense(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Expense created and quote marked as paid",
       });
     },
     onError: (error: any) => {
@@ -179,7 +238,12 @@ export default function Expenses() {
     if (editingExpense) {
       updateExpenseMutation.mutate({ id: editingExpense.id, data: expenseData });
     } else {
-      addExpenseMutation.mutate(expenseData);
+      // If creating from a quote, also update the quote status to "paid"
+      if (data.quoteId) {
+        addExpenseWithQuoteUpdateMutation.mutate({ expenseData, quoteId: parseInt(data.quoteId) });
+      } else {
+        addExpenseMutation.mutate(expenseData);
+      }
     }
   };
 
