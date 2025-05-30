@@ -2072,7 +2072,7 @@ export default function Gantt() {
                   <SelectValue placeholder="Select contact" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No contact</SelectItem>
+                  <SelectItem value="none">No contact</SelectItem>
                   {contacts.map((contact) => (
                     <SelectItem key={contact.id} value={contact.id.toString()}>
                       {contact.name}
@@ -2122,7 +2122,7 @@ export default function Gantt() {
                       notes: (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value || '',
                       propertyId: selectedPropertyId!,
                       taskId: selectedTaskId!,
-                      contactId: contactValue ? parseInt(contactValue) : undefined,
+                      contactId: contactValue && contactValue !== 'none' ? parseInt(contactValue) : undefined,
                     });
                   }
                 }}
