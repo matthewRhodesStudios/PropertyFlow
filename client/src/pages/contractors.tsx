@@ -344,7 +344,7 @@ export default function Contractors() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pl-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Contractors</h1>
