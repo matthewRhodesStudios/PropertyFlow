@@ -874,7 +874,7 @@ export default function Gantt() {
                                       startEditTask(task);
                                     }}
                                   >
-                                    <Edit className="h-4 w-4" />
+                                    <Edit2 className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1139,13 +1139,13 @@ export default function Gantt() {
                         name="relativeDueDays"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Number of Days</FormLabel>
+                            <FormLabel>Days (Optional)</FormLabel>
                             <FormControl>
                               <div className="flex items-center gap-2">
                                 <Input 
                                   type="number" 
                                   min="0" 
-                                  placeholder="0" 
+                                  placeholder="Leave empty for immediate" 
                                   {...field} 
                                   value={field.value || ""}
                                   onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
@@ -1153,6 +1153,9 @@ export default function Gantt() {
                                 <Clock className="h-4 w-4 text-gray-400" />
                               </div>
                             </FormControl>
+                            <p className="text-sm text-gray-600">
+                              Leave empty for immediate dependency
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1230,6 +1233,237 @@ export default function Gantt() {
               <Button type="submit" disabled={createTaskMutation.isPending}>
                 Create Task
               </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editTaskOpen} onOpenChange={setEditTaskOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <Form {...editTaskForm}>
+            <form onSubmit={editTaskForm.handleSubmit(onSubmitEditTask)} className="space-y-4">
+              <FormField
+                control={editTaskForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Task title..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editTaskForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="legal">Legal</SelectItem>
+                          <SelectItem value="surveying">Surveying</SelectItem>
+                          <SelectItem value="estate_agent">Estate Agent</SelectItem>
+                          <SelectItem value="renovation">Renovation</SelectItem>
+                          <SelectItem value="general">General</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editTaskForm.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="not_started">Not Started</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editTaskForm.control}
+                name="quotable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Quotable Task
+                      </FormLabel>
+                      <p className="text-sm text-gray-600">
+                        Enable quotes for this task (e.g., renovation work, contractor services)
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editTaskForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Task description..." {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Due Date Type Selection */}
+              <div className="space-y-3">
+                <Label>Due Date Type</Label>
+                <RadioGroup
+                  value={dueDateType}
+                  onValueChange={(value) => setDueDateType(value as 'absolute' | 'relative')}
+                  className="flex gap-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="absolute" id="absolute-edit" />
+                    <Label htmlFor="absolute-edit">Specific Date</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="relative" id="relative-edit" />
+                    <Label htmlFor="relative-edit">Relative to Another Task</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {dueDateType === 'absolute' ? (
+                <FormField
+                  control={editTaskForm.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <div className="space-y-4">
+                  <FormField
+                    control={editTaskForm.control}
+                    name="dependsOnTaskId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Depends on Task</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select dependency task" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {editingTask && getAvailableDependencyTasks(editingTask.propertyId, editingTask.id).map((task) => (
+                              <SelectItem key={task.id} value={task.id.toString()}>
+                                {task.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={editTaskForm.control}
+                      name="relativeDueDays"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Days (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Leave empty for immediate"
+                              {...field} 
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-gray-600">
+                            Leave empty for immediate dependency
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={editTaskForm.control}
+                      name="relativeDirection"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Direction</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || "after"}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="before">Before</SelectItem>
+                              <SelectItem value="after">After</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button type="submit" disabled={updateTaskMutation.isPending}>
+                  Update Task
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setEditTaskOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
             </form>
           </Form>
         </DialogContent>
