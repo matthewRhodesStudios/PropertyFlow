@@ -220,14 +220,19 @@ export default function Gantt() {
   };
 
   const onSubmitContact = (data: any) => {
+    console.log('Submitting contact data:', data);
+    console.log('Editing contact:', editingContact);
+    
     if (editingContact) {
+      const updateData = {
+        ...data,
+        propertyId: selectedPropertyId,
+        role: contactType
+      };
+      console.log('Update data:', updateData);
       updateContactMutation.mutate({
         id: editingContact.id,
-        data: {
-          ...data,
-          propertyId: selectedPropertyId,
-          role: contactType
-        }
+        data: updateData
       });
     } else {
       createContactMutation.mutate({
