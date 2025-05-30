@@ -46,6 +46,7 @@ export default function Expenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [expenseFormTab, setExpenseFormTab] = useState<"quote" | "manual">("quote");
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -406,108 +407,109 @@ export default function Expenses() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md" aria-describedby="expense-form-description">
           <DialogHeader>
             <DialogTitle>
               {editingExpense ? "Edit Expense" : "Add New Expense"}
             </DialogTitle>
           </DialogHeader>
+          <p id="expense-form-description" className="sr-only">
+            Form to add or edit expense details including amount, category, and supplier information
+          </p>
+
+          <div className="flex border-b mb-4">
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                expenseFormTab === "quote" 
+                  ? "border-blue-500 text-blue-600" 
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => setExpenseFormTab("quote")}
+            >
+              From Quote
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                expenseFormTab === "manual" 
+                  ? "border-blue-500 text-blue-600" 
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => setExpenseFormTab("manual")}
+            >
+              New Expense
+            </button>
+          </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               
-              <FormField
-                control={form.control}
-                name="quoteId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start with Quote (Optional)</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      if (value) {
-                        const quote = quotes.find(q => q.id === parseInt(value));
-                        if (quote) {
-                          setSelectedQuote(quote);
-                          form.setValue("amount", quote.amount);
-                          form.setValue("title", quote.service);
-                          form.setValue("category", "professional_fees");
-                          // Set contractor if quote has one
-                          if (quote.contractorId) {
-                            form.setValue("contractorType", "existing");
-                            form.setValue("contractorId", quote.contractorId.toString());
-                          }
-                        }
-                      } else {
-                        setSelectedQuote(null);
-                      }
-                    }} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select quote to auto-fill details" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {quotes.map((quote) => (
-                          <SelectItem key={quote.id} value={quote.id.toString()}>
-                            {quote.service} - {formatCurrency(quote.amount)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="propertyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Property *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select property" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {properties.map((property) => (
-                          <SelectItem key={property.id} value={property.id.toString()}>
-                            {property.address}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter expense title" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+              {expenseFormTab === "quote" && (
                 <FormField
                   control={form.control}
-                  name="amount"
+                  name="quoteId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount (£) *</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.01" placeholder="0.00" />
-                      </FormControl>
+                      <FormLabel>Select Quote *</FormLabel>
+                      <Select onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value) {
+                          const quote = quotes.find(q => q.id === parseInt(value));
+                          if (quote) {
+                            setSelectedQuote(quote);
+                            form.setValue("amount", quote.amount);
+                            form.setValue("title", quote.service);
+                            form.setValue("category", "professional_fees");
+                            if (quote.contractorId) {
+                              form.setValue("contractorType", "existing");
+                              form.setValue("contractorId", quote.contractorId.toString());
+                            }
+                          }
+                        } else {
+                          setSelectedQuote(null);
+                        }
+                      }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a quote to convert to expense" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {quotes.map((quote) => (
+                            <SelectItem key={quote.id} value={quote.id.toString()}>
+                              {quote.service} - {formatCurrency(quote.amount)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="propertyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Property *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {properties.map((property) => (
+                            <SelectItem key={property.id} value={property.id.toString()}>
+                              {property.address}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -530,38 +532,66 @@ export default function Expenses() {
 
               <FormField
                 control={form.control}
-                name="category"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="materials">Materials</SelectItem>
-                        <SelectItem value="labor">Labor</SelectItem>
-                        <SelectItem value="professional_fees">Professional Fees</SelectItem>
-                        <SelectItem value="legal">Legal</SelectItem>
-                        <SelectItem value="utilities">Utilities</SelectItem>
-                        <SelectItem value="insurance">Insurance</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Title *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter expense title" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (£) *</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="materials">Materials</SelectItem>
+                          <SelectItem value="labor">Labor</SelectItem>
+                          <SelectItem value="professional_fees">Professional</SelectItem>
+                          <SelectItem value="legal">Legal</SelectItem>
+                          <SelectItem value="utilities">Utilities</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="contractorType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Supplier/Contractor</FormLabel>
+                    <FormLabel>Supplier</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -594,7 +624,7 @@ export default function Expenses() {
                         <SelectContent>
                           {contractors.map((contractor) => (
                             <SelectItem key={contractor.id} value={contractor.id.toString()}>
-                              {contractor.name} - {contractor.company}
+                              {contractor.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -621,7 +651,7 @@ export default function Expenses() {
                 />
               )}
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={addExpenseMutation.isPending || updateExpenseMutation.isPending}>
                   {editingExpense ? "Update" : "Add"} Expense
                 </Button>
@@ -634,10 +664,9 @@ export default function Expenses() {
                   Cancel
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="propertyId"
+            </form>
+          </Form>
+        </DialogContent>
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Property *</FormLabel>
