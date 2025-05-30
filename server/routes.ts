@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertPropertySchema, insertContractorSchema, insertQuoteSchema, insertJobSchema,
-  insertTaskSchema, insertDocumentSchema, insertContactSchema 
+  insertTaskSchema, insertDocumentSchema, insertContactSchema, insertExpenseSchema 
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
