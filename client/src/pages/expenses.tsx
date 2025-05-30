@@ -16,13 +16,27 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
-import type { Expense, InsertExpense, Property, Task, Job } from "@shared/schema";
+import type { Expense, InsertExpense, Property, Task, Job, Contractor, Quote } from "@shared/schema";
 import { insertExpenseSchema } from "@shared/schema";
 
-const formSchema = insertExpenseSchema.extend({
+const formSchema = z.object({
+  propertyId: z.string().min(1, "Property is required"),
+  taskId: z.string().optional(),
+  jobId: z.string().optional(),
+  quoteId: z.string().optional(),
   date: z.string().min(1, "Date is required"),
+  title: z.string().min(1, "Title is required"),
+  category: z.string().min(1, "Category is required"),
   amount: z.string().min(1, "Amount is required"),
+  description: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  supplier: z.string().optional(),
+  contractorType: z.enum(["existing", "custom"]).optional(),
+  contractorId: z.string().optional(),
+  customSupplier: z.string().optional(),
+  receiptNumber: z.string().optional(),
   vatAmount: z.string().optional(),
+  vatRate: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -31,6 +45,7 @@ export default function Expenses() {
   const [selectedProperty, setSelectedProperty] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -43,6 +58,9 @@ export default function Expenses() {
       category: "",
       paymentMethod: "",
       supplier: "",
+      contractorType: "custom",
+      contractorId: "",
+      customSupplier: "",
       receiptNumber: "",
       vatAmount: "",
       date: new Date().toISOString().split('T')[0],
@@ -60,6 +78,14 @@ export default function Expenses() {
 
   const { data: jobs = [] } = useQuery<Job[]>({
     queryKey: ["/api/jobs"],
+  });
+
+  const { data: contractors = [] } = useQuery<Contractor[]>({
+    queryKey: ["/api/contractors"],
+  });
+
+  const { data: quotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes"],
   });
 
   const { data: expenses = [] } = useQuery<Expense[]>({
@@ -129,12 +155,20 @@ export default function Expenses() {
 
   const onSubmit = (data: FormData) => {
     const expenseData: InsertExpense = {
-      ...data,
       propertyId: parseInt(data.propertyId),
       taskId: data.taskId ? parseInt(data.taskId) : null,
       jobId: data.jobId ? parseInt(data.jobId) : null,
-      amount: data.amount,
-      vatAmount: data.vatAmount || null,
+      title: data.title,
+      description: data.description || null,
+      amount: parseFloat(data.amount),
+      category: data.category,
+      paymentMethod: data.paymentMethod || null,
+      supplier: data.contractorType === "existing" && data.contractorId 
+        ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
+        : data.customSupplier || null,
+      receiptNumber: data.receiptNumber || null,
+      vatAmount: data.vatAmount ? parseFloat(data.vatAmount) : null,
+      vatRate: data.vatRate ? parseFloat(data.vatRate) : null,
       date: new Date(data.date),
     };
 
@@ -507,45 +541,149 @@ export default function Expenses() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="supplier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier</FormLabel>
+              <FormField
+                control={form.control}
+                name="quoteId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link to Quote (Optional)</FormLabel>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      const quote = quotes.find(q => q.id === parseInt(value));
+                      if (quote) {
+                        setSelectedQuote(quote);
+                        form.setValue("amount", quote.amount.toString());
+                        form.setValue("title", quote.name || "Quote expense");
+                        form.setValue("category", "Quote");
+                      }
+                    }} value={field.value}>
                       <FormControl>
-                        <Input {...field} placeholder="Enter supplier name" />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a quote to link" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        {quotes.map((quote) => (
+                          <SelectItem key={quote.id} value={quote.id.toString()}>
+                            {quote.name} - {formatCurrency(quote.amount)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              {selectedQuote && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium text-blue-900">Quote Details</h4>
+                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                      <div>
+                        <span className="text-blue-700">Amount:</span> {formatCurrency(selectedQuote.amount)}
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Status:</span> {selectedQuote.status}
+                      </div>
+                      {selectedQuote.description && (
+                        <div className="col-span-2">
+                          <span className="text-blue-700">Description:</span> {selectedQuote.description}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <FormField
+                control={form.control}
+                name="contractorType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supplier/Contractor</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose supplier type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="existing">Select Existing Contractor</SelectItem>
+                        <SelectItem value="custom">Enter Custom Supplier</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("contractorType") === "existing" && (
                 <FormField
                   control={form.control}
-                  name="paymentMethod"
+                  name="contractorId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Payment Method</FormLabel>
+                      <FormLabel>Select Contractor</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select payment method" />
+                            <SelectValue placeholder="Choose contractor" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="card">Card</SelectItem>
-                          <SelectItem value="transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="cheque">Cheque</SelectItem>
+                          {contractors.map((contractor) => (
+                            <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                              {contractor.name} - {contractor.company}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
+
+              {form.watch("contractorType") === "custom" && (
+                <FormField
+                  control={form.control}
+                  name="customSupplier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Enter supplier/company name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="cheque">Cheque</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
