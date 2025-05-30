@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Download, FileText } from "lucide-react";
+import { Eye, Download, FileText, Edit2, Trash2 } from "lucide-react";
 
 export default function Documents() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [viewingDocument, setViewingDocument] = useState<any>(null);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: documents = [], isLoading } = useQuery<Document[]>({
@@ -44,6 +46,18 @@ export default function Documents() {
     },
   });
 
+  const editForm = useForm<InsertDocument>({
+    resolver: zodResolver(insertDocumentSchema),
+    defaultValues: {
+      name: "",
+      type: "",
+      filePath: "",
+      propertyId: undefined,
+      contractorId: undefined,
+      tags: [],
+    },
+  });
+
   const createDocumentMutation = useMutation({
     mutationFn: (data: InsertDocument) => apiRequest("POST", "/api/documents", data),
     onSuccess: () => {
@@ -57,8 +71,59 @@ export default function Documents() {
     },
   });
 
+  const updateDocumentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertDocument> }) => 
+      apiRequest("PATCH", `/api/documents/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      setIsEditDialogOpen(false);
+      setEditingDocument(null);
+      editForm.reset();
+      toast({ title: "Document updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update document", variant: "destructive" });
+    },
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/documents/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      toast({ title: "Document deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete document", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: InsertDocument) => {
     createDocumentMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: InsertDocument) => {
+    if (editingDocument) {
+      updateDocumentMutation.mutate({ id: editingDocument.id, data });
+    }
+  };
+
+  const startEditDocument = (document: Document) => {
+    setEditingDocument(document);
+    editForm.reset({
+      name: document.name,
+      type: document.type,
+      filePath: document.filePath,
+      propertyId: document.propertyId || undefined,
+      contractorId: document.contractorId || undefined,
+      tags: document.tags || [],
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteDocument = (document: Document) => {
+    if (confirm(`Are you sure you want to delete "${document.name}"? This action cannot be undone.`)) {
+      deleteDocumentMutation.mutate(document.id);
+    }
   };
 
   const getPropertyAddress = (propertyId: number | null) => {
@@ -369,11 +434,11 @@ export default function Documents() {
                   </div>
                 </div>
                 
-                <div className="flex space-x-2 mt-4">
+                <div className="grid grid-cols-2 gap-2 mt-4">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1"
+                    className="w-full"
                     onClick={async () => {
                       try {
                         const response = await fetch(`/api/documents/${document.id}/view`);
@@ -402,7 +467,7 @@ export default function Documents() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1"
+                    className="w-full"
                     onClick={() => {
                       const downloadUrl = `/api/documents/${document.id}/download`;
                       const link = window.document.createElement('a');
@@ -413,6 +478,25 @@ export default function Documents() {
                   >
                     <Download className="w-4 h-4 mr-1" />
                     Download
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => startEditDocument(document)}
+                  >
+                    <Edit2 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteDocument(document)}
+                    disabled={deleteDocumentMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>
