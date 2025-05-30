@@ -166,6 +166,8 @@ export const insertContactSchema = createInsertSchema(contacts).omit({
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
+}).extend({
+  date: z.string().transform((str) => new Date(str)),
 });
 
 // Types

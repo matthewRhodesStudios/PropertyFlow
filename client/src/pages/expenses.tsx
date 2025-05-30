@@ -171,7 +171,7 @@ export default function Expenses() {
         : data.customSupplier || null,
       receiptNumber: data.receiptNumber || null,
       vatAmount: data.vatAmount || null,
-      date: new Date(data.date),
+      date: data.date,
     };
     
     console.log("Expense data being sent:", expenseData);
