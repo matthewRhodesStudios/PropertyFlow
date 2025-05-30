@@ -1,8 +1,11 @@
 import type { Property } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
 
 interface PropertyCardProps {
   property: Property;
+  onEdit?: (property: Property) => void;
 }
 
 const statusConfig = {
@@ -12,7 +15,7 @@ const statusConfig = {
   sold: { label: "Sold", color: "bg-gray-100 text-gray-800", progressColor: "bg-gray-500" }
 };
 
-export default function PropertyCard({ property }: PropertyCardProps) {
+export default function PropertyCard({ property, onEdit }: PropertyCardProps) {
   const investment = parseFloat(property.purchasePrice) + parseFloat(property.renovationBudget);
   const config = statusConfig[property.status as keyof typeof statusConfig] || statusConfig.planning;
 
@@ -44,11 +47,23 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             <span className="text-xs text-gray-500">{property.progress}% Complete</span>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium text-gray-900 font-roboto-mono">
-            {formatCurrency(investment)}
-          </p>
-          <p className="text-xs text-gray-500">Investment</p>
+        <div className="text-right flex flex-col items-end space-y-2">
+          <div>
+            <p className="text-sm font-medium text-gray-900 font-roboto-mono">
+              {formatCurrency(investment)}
+            </p>
+            <p className="text-xs text-gray-500">Investment</p>
+          </div>
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(property)}
+              className="h-7 px-2"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
       <div className="mt-3">

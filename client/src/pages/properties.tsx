@@ -16,6 +16,8 @@ import PropertyCard from "@/components/property-card";
 
 export default function Properties() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const { toast } = useToast();
 
   const { data: properties = [], isLoading } = useQuery<Property[]>({
@@ -23,6 +25,21 @@ export default function Properties() {
   });
 
   const form = useForm<InsertProperty>({
+    resolver: zodResolver(insertPropertySchema),
+    defaultValues: {
+      address: "",
+      type: "",
+      purchasePrice: "0",
+      renovationBudget: "0",
+      projectedSalePrice: "0",
+      status: "planning",
+      progress: 0,
+      imageUrl: "",
+      notes: "",
+    },
+  });
+
+  const editForm = useForm<InsertProperty>({
     resolver: zodResolver(insertPropertySchema),
     defaultValues: {
       address: "",
@@ -51,8 +68,46 @@ export default function Properties() {
     },
   });
 
+  const updatePropertyMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertProperty> }) => 
+      apiRequest("PATCH", `/api/properties/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      setIsEditDialogOpen(false);
+      setEditingProperty(null);
+      editForm.reset();
+      toast({ title: "Property updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update property", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: InsertProperty) => {
     createPropertyMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: InsertProperty) => {
+    if (editingProperty) {
+      updatePropertyMutation.mutate({ id: editingProperty.id, data });
+    }
+  };
+
+  const startEditProperty = (property: Property) => {
+    setEditingProperty(property);
+    editForm.reset({
+      address: property.address,
+      type: property.type,
+      purchasePrice: property.purchasePrice,
+      renovationBudget: property.renovationBudget,
+      projectedSalePrice: property.projectedSalePrice,
+      status: property.status,
+      progress: property.progress,
+      imageUrl: property.imageUrl || "",
+      notes: property.notes || "",
+    });
+    setIsEditDialogOpen(true);
   };
 
   const filterByStatus = (status: string) => {

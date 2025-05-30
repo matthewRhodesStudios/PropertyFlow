@@ -462,47 +462,21 @@ export default function Documents() {
 
                 <FormField
                   control={editForm.control}
-                  name="taskId"
+                  name="contactId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Task (optional)</FormLabel>
+                      <FormLabel>Contact (optional)</FormLabel>
                       <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select task" />
+                            <SelectValue placeholder="Select contact" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">No task</SelectItem>
-                          {tasks.map((task) => (
-                            <SelectItem key={task.id} value={task.id.toString()}>
-                              {task.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={editForm.control}
-                  name="jobId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subtask (optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subtask" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No subtask</SelectItem>
-                          {jobs.map((job) => (
-                            <SelectItem key={job.id} value={job.id.toString()}>
-                              {job.name}
+                          <SelectItem value="none">No contact</SelectItem>
+                          {contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id.toString()}>
+                              {contact.name} - {contact.role}
                             </SelectItem>
                           ))}
                         </SelectContent>
