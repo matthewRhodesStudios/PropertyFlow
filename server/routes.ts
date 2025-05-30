@@ -243,7 +243,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/jobs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = insertJobSchema.partial().parse(req.body);
+      
+      // Convert date string to Date object if present
+      const jobData = {
+        ...req.body,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+      };
+      
+      const updates = insertJobSchema.partial().parse(jobData);
       const job = await storage.updateJob(id, updates);
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
