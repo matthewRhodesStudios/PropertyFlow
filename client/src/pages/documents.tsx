@@ -420,6 +420,63 @@ export default function Documents() {
           ))}
         </div>
       )}
+
+      {/* Document Viewing Dialog */}
+      <Dialog open={!!viewingDocument} onOpenChange={() => setViewingDocument(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              {viewingDocument?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewingDocument && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Document Type</label>
+                  <p className="text-sm">{viewingDocument.type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Upload Date</label>
+                  <p className="text-sm">{new Date(viewingDocument.uploadDate).toLocaleDateString()}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-500">File Path</label>
+                  <p className="text-sm font-mono bg-white p-2 rounded border">{viewingDocument.filePath}</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4 bg-white">
+                <h4 className="font-medium mb-2">Document Content</h4>
+                <div className="bg-gray-50 p-4 rounded border min-h-[200px] whitespace-pre-wrap text-sm">
+                  {viewingDocument.content}
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const downloadUrl = `/api/documents/${viewingDocument.id}/download`;
+                    const link = window.document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = viewingDocument.name;
+                    link.click();
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+                <Button onClick={() => setViewingDocument(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
