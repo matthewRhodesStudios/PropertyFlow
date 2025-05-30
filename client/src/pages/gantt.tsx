@@ -1230,7 +1230,11 @@ export default function Gantt() {
                 )}
               />
 
-              <Button type="submit" disabled={updateContactMutation.isPending || createContactMutation.isPending}>
+              <Button 
+                type="submit" 
+                disabled={updateContactMutation.isPending || createContactMutation.isPending}
+                onClick={() => console.log('Submit button clicked!')}
+              >
                 {editingContact ? 'Update' : 'Add'} {contactType === 'solicitor' ? 'Solicitor' : 'Estate Agent'}
               </Button>
             </form>
