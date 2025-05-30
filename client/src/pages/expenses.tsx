@@ -161,7 +161,7 @@ export default function Expenses() {
       jobId: data.jobId ? parseInt(data.jobId) : null,
       title: data.title,
       description: data.description || null,
-      amount: data.amount,
+      amount: parseFloat(data.amount),
       category: data.category,
       paymentMethod: data.paymentMethod || null,
       supplier: data.contractorType === "existing" && data.contractorId 
