@@ -222,9 +222,15 @@ export default function Contractors() {
 
   const handleCustomSpecialtySubmit = () => {
     if (customSpecialty.trim()) {
-      form.setValue("specialty", customSpecialty.trim());
+      const trimmedSpecialty = customSpecialty.trim();
+      console.log("Setting custom specialty:", trimmedSpecialty);
+      form.setValue("specialty", trimmedSpecialty);
       setShowCustomSpecialty(false);
       setCustomSpecialty("");
+      toast({
+        title: "Custom Specialty Added",
+        description: `"${trimmedSpecialty}" has been set as the specialty`,
+      });
     }
   };
 
