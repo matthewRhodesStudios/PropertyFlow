@@ -305,7 +305,8 @@ export default function Gantt() {
       ...data,
       taskId: selectedTaskId || 1,
       propertyId: selectedPropertyId || 1,
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      type: "general", // Set default type since it's required by schema
+      dueDate: data.dueDate ? data.dueDate : undefined, // Keep as string for server conversion
       contractorId: data.contractorId || undefined,
       contactId: data.contactId || undefined,
     };
@@ -1774,7 +1775,11 @@ export default function Gantt() {
           <Form {...jobForm}>
             <form onSubmit={jobForm.handleSubmit((data) => {
               if (editingJob) {
-                updateJobMutation.mutate({ id: editingJob.id, ...data });
+                const jobData = {
+                  ...data,
+                  type: "general", // Set default type since it's required by schema
+                };
+                updateJobMutation.mutate({ id: editingJob.id, ...jobData });
                 setEditJobOpen(false);
                 setEditingJob(null);
               }
