@@ -298,7 +298,18 @@ export default function Gantt() {
   };
 
   const onSubmitJob = (data: any) => {
-    createJobMutation.mutate(data);
+    console.log('Job form data:', data);
+    console.log('Selected task ID:', selectedTaskId);
+    console.log('Selected property ID:', selectedPropertyId);
+    
+    const jobData = {
+      ...data,
+      taskId: selectedTaskId || 1,
+      propertyId: selectedPropertyId || 1,
+    };
+    
+    console.log('Final job data:', jobData);
+    createJobMutation.mutate(jobData);
   };
 
   const onSubmitContact = (data: any) => {
