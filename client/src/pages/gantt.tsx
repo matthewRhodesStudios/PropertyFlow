@@ -235,7 +235,7 @@ export default function Gantt() {
       return `${days} day${days !== 1 ? 's' : ''} ${direction} "${dependencyTask.title}" ${timing}`;
     } else {
       // Immediate dependency (no days specified)
-      return `Immediately ${direction} "${dependencyTask.title}"`;
+      return `${direction} "${dependencyTask.title}"`;
     }
   };
 
@@ -817,14 +817,7 @@ export default function Gantt() {
                                   ) : (
                                     <ChevronRight className="h-5 w-5 text-gray-500" />
                                   )}
-                                  <div className="flex flex-col">
-                                    <h3 className="text-lg font-semibold">{task.title}</h3>
-                                    {getRelativeDateDescription(task) && (
-                                      <p className="text-sm text-blue-600 italic">
-                                        {getRelativeDateDescription(task)}
-                                      </p>
-                                    )}
-                                  </div>
+                                  <h3 className="text-lg font-semibold">{task.title}</h3>
                                 </div>
                                 <Badge className={getCategoryColor(task.category)}>
                                   {task.category.replace('_', ' ')}
@@ -832,6 +825,11 @@ export default function Gantt() {
                                 <Badge className={getStatusColor(task.status)}>
                                   {task.status.replace('_', ' ')}
                                 </Badge>
+                                {getRelativeDateDescription(task) && (
+                                  <Badge className="bg-blue-100 text-blue-800">
+                                    {getRelativeDateDescription(task)}
+                                  </Badge>
+                                )}
                                 {task.dueDate && (
                                   <div className={cn(
                                     "flex items-center gap-1 text-sm px-2 py-1 rounded",
