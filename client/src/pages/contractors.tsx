@@ -22,6 +22,8 @@ export default function Contractors() {
   const [selectedContractor, setSelectedContractor] = useState<Contractor | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingContractor, setEditingContractor] = useState<Contractor | null>(null);
+  const [customSpecialty, setCustomSpecialty] = useState("");
+  const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
   const { toast } = useToast();
 
   const { data: contractors = [], isLoading } = useQuery({
@@ -127,6 +129,8 @@ export default function Contractors() {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingContractor(null);
+    setShowCustomSpecialty(false);
+    setCustomSpecialty("");
     form.reset({
       name: "",
       company: "",
@@ -139,6 +143,39 @@ export default function Contractors() {
       rating: undefined,
       notes: "",
     });
+  };
+
+  const getExistingSpecialties = () => {
+    const defaultSpecialties = ["Plumbing", "Electrical", "Flooring", "Painting", "Roofing", "HVAC", "Landscaping", "General"];
+    const existingSpecialties = new Set(contractors.map((c: any) => c.specialty).filter(Boolean));
+    const allSpecialties = [...defaultSpecialties];
+    
+    existingSpecialties.forEach(specialty => {
+      if (!defaultSpecialties.includes(specialty)) {
+        allSpecialties.push(specialty);
+      }
+    });
+    
+    return allSpecialties.sort();
+  };
+
+  const handleSpecialtyChange = (value: string) => {
+    if (value === "custom") {
+      setShowCustomSpecialty(true);
+      form.setValue("specialty", "");
+    } else {
+      setShowCustomSpecialty(false);
+      setCustomSpecialty("");
+      form.setValue("specialty", value);
+    }
+  };
+
+  const handleCustomSpecialtySubmit = () => {
+    if (customSpecialty.trim()) {
+      form.setValue("specialty", customSpecialty.trim());
+      setShowCustomSpecialty(false);
+      setCustomSpecialty("");
+    }
   };
 
   const formatCurrency = (amount: number) => `£${amount.toLocaleString()}`;
@@ -324,23 +361,54 @@ export default function Contractors() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Specialty</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select specialty" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Plumbing">Plumbing</SelectItem>
-                            <SelectItem value="Electrical">Electrical</SelectItem>
-                            <SelectItem value="Flooring">Flooring</SelectItem>
-                            <SelectItem value="Painting">Painting</SelectItem>
-                            <SelectItem value="Roofing">Roofing</SelectItem>
-                            <SelectItem value="HVAC">HVAC</SelectItem>
-                            <SelectItem value="Landscaping">Landscaping</SelectItem>
-                            <SelectItem value="General">General</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {!showCustomSpecialty ? (
+                          <Select onValueChange={handleSpecialtyChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select specialty" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getExistingSpecialties().map((specialty) => (
+                                <SelectItem key={specialty} value={specialty}>
+                                  {specialty}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="custom">+ Add Custom Specialty</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter custom specialty"
+                              value={customSpecialty}
+                              onChange={(e) => setCustomSpecialty(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleCustomSpecialtySubmit();
+                                }
+                              }}
+                            />
+                            <Button 
+                              type="button" 
+                              onClick={handleCustomSpecialtySubmit}
+                              disabled={!customSpecialty.trim()}
+                            >
+                              Add
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline"
+                              onClick={() => {
+                                setShowCustomSpecialty(false);
+                                setCustomSpecialty("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
