@@ -306,6 +306,9 @@ export default function Gantt() {
       ...data,
       taskId: selectedTaskId || 1,
       propertyId: selectedPropertyId || 1,
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      contractorId: data.contractorId || undefined,
+      contactId: data.contactId || undefined,
     };
     
     console.log('Final job data:', jobData);

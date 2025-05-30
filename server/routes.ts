@@ -221,10 +221,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/jobs", async (req, res) => {
     try {
+      console.log('Received job data:', req.body);
       const validatedData = insertJobSchema.parse(req.body);
+      console.log('Validated job data:', validatedData);
       const job = await storage.createJob(validatedData);
       res.status(201).json(job);
     } catch (error) {
+      console.log('Job validation error:', error);
       res.status(400).json({ message: "Invalid job data", error });
     }
   });
