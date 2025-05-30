@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertTaskSchema, insertJobSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export default function Gantt() {
   const [expandedTasks, setExpandedTasks] = useState<Record<number, boolean>>({});
@@ -1003,6 +1003,40 @@ export default function Gantt() {
                                   Add Job
                                 </Button>
                               </div>
+
+                              {/* Quote List */}
+                              {taskQuotes.length > 0 && (
+                                <div className="space-y-2 mb-4">
+                                  <h5 className="text-sm font-medium text-gray-700">Quotes Received</h5>
+                                  {taskQuotes.map((quote) => {
+                                    const contractor = contractors.find(c => c.id === quote.contractorId);
+                                    return (
+                                      <div key={quote.id} className="flex items-center justify-between p-2 bg-blue-50 rounded border-l-4 border-blue-300">
+                                        <div className="flex items-center gap-3">
+                                          <div className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            quote.status === 'accepted' ? 'bg-green-500' :
+                                            quote.status === 'rejected' ? 'bg-red-500' :
+                                            'bg-yellow-500'
+                                          )}></div>
+                                          <div>
+                                            <span className="text-sm font-medium">{contractor?.name || 'Unknown Contractor'}</span>
+                                            <span className="text-xs text-gray-500 ml-2">{formatCurrency(quote.amount)}</span>
+                                          </div>
+                                        </div>
+                                        <Badge className={cn(
+                                          "text-xs",
+                                          quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                          quote.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                          'bg-yellow-100 text-yellow-800'
+                                        )}>
+                                          {quote.status}
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
 
                               {/* Job List */}
                               <div className="space-y-2">

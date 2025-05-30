@@ -143,6 +143,23 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull().references(() => properties.id),
+  taskId: integer("task_id").references(() => tasks.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // survey, viewing, meeting, appointment, inspection, etc.
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  duration: integer("duration"), // duration in minutes
+  location: text("location"),
+  contactId: integer("contact_id").references(() => contacts.id),
+  contractorId: integer("contractor_id").references(() => contractors.id),
+  status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled, rescheduled
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
@@ -198,6 +215,16 @@ export const insertDocumentAssignmentSchema = createInsertSchema(documentAssignm
   createdAt: true,
 });
 
+export const insertEventSchema = createInsertSchema(events).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  scheduledAt: z.union([z.string(), z.date()]).transform((val) => {
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+});
+
 // Types
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
@@ -228,3 +255,6 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 
 export type DocumentAssignment = typeof documentAssignments.$inferSelect;
 export type InsertDocumentAssignment = z.infer<typeof insertDocumentAssignmentSchema>;
+
+export type Event = typeof events.$inferSelect;
+export type InsertEvent = z.infer<typeof insertEventSchema>;
