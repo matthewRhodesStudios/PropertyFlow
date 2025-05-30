@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Quotes() {
   const [newQuoteOpen, setNewQuoteOpen] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const { toast } = useToast();
 
   // Queries
@@ -63,6 +64,17 @@ export default function Quotes() {
     },
   });
 
+  const updateQuoteMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest("PATCH", `/api/quotes/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quotes"] });
+      setEditingQuote(null);
+      form.reset();
+      toast({ title: "Quote updated successfully" });
+    },
+  });
+
   const deleteQuoteMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/quotes/${id}`),
     onSuccess: () => {
@@ -91,7 +103,28 @@ export default function Quotes() {
     if (!data.amount || data.amount.trim() === '') {
       data.amount = '0';
     }
-    createQuoteMutation.mutate(data);
+    
+    if (editingQuote) {
+      updateQuoteMutation.mutate({ id: editingQuote.id, data });
+    } else {
+      createQuoteMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (quote: Quote) => {
+    setEditingQuote(quote);
+    form.reset({
+      propertyId: quote.propertyId,
+      taskId: quote.taskId,
+      contractorId: quote.contractorId,
+      service: quote.service,
+      amount: quote.amount,
+      dateReceived: new Date(quote.dateReceived),
+      validUntil: quote.validUntil ? new Date(quote.validUntil) : undefined,
+      status: quote.status,
+      notes: quote.notes || "",
+    });
+    setNewQuoteOpen(true);
   };
 
   const handleStatusChange = (quoteId: number, newStatus: string) => {
