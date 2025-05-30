@@ -208,7 +208,13 @@ export default function Quotes() {
           <h1 className="text-3xl font-bold">Quotes & Estimates</h1>
           <p className="text-gray-600 mt-1">Manage contractor quotes for quotable tasks</p>
         </div>
-        <Dialog open={newQuoteOpen} onOpenChange={setNewQuoteOpen}>
+        <Dialog open={newQuoteOpen} onOpenChange={(open) => {
+          setNewQuoteOpen(open);
+          if (!open) {
+            setEditingQuote(null);
+            form.reset();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
