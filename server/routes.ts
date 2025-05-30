@@ -348,6 +348,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/contacts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = insertContactSchema.partial().parse(req.body);
+      const contact = await storage.updateContact(id, updates);
+      if (!contact) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      res.json(contact);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid contact data", error });
+    }
+  });
+
   // Dashboard stats endpoint
   app.get("/api/dashboard/stats", async (_req, res) => {
     try {

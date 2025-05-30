@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, Edit2, PoundSterling, Trash2, GripVertical, Clock } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, Edit2, PoundSterling, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,24 +15,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertTaskSchema, insertJobSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
+import { insertTaskSchema, insertContactSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
 export default function Gantt() {
   const [expandedTasks, setExpandedTasks] = useState<Record<number, boolean>>({});
   const [newTaskOpen, setNewTaskOpen] = useState(false);
-  const [newJobOpen, setNewJobOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [contactType, setContactType] = useState<'solicitor' | 'estate_agent'>('solicitor');
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-  const [dueDateType, setDueDateType] = useState<'absolute' | 'relative'>('absolute');
 
   // Queries
   const { data: properties = [] } = useQuery({
@@ -66,15 +61,6 @@ export default function Gantt() {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setNewTaskOpen(false);
       taskForm.reset();
-    },
-  });
-
-  const createJobMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/jobs", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      setNewJobOpen(false);
-      jobForm.reset();
     },
   });
 
@@ -117,23 +103,6 @@ export default function Gantt() {
       status: "not_started",
       quotable: false,
       dueDate: undefined,
-      dependsOnTaskId: undefined,
-      relativeDueDays: undefined,
-    },
-  });
-
-  const jobForm = useForm({
-    resolver: zodResolver(insertJobSchema),
-    defaultValues: {
-      taskId: 1,
-      propertyId: 1,
-      name: "",
-      description: "",
-      type: "general",
-      status: "pending",
-      dueDate: undefined,
-      contractorId: undefined,
-      contactId: undefined,
     },
   });
 
@@ -198,25 +167,13 @@ export default function Gantt() {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'in_progress': return 'bg-blue-100 text-blue-800';
       case 'not_started': return 'bg-gray-100 text-gray-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'on_hold': return 'bg-red-100 text-red-800';
+      case 'on_hold': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const onSubmitTask = (data: any) => {
-    const processedData = { ...data };
-    if (dueDateType === 'relative') {
-      processedData.dueDate = null; // Clear absolute date when using relative
-    } else {
-      processedData.dependsOnTaskId = null;
-      processedData.relativeDueDays = null;
-    }
-    createTaskMutation.mutate(processedData);
-  };
-
-  const onSubmitJob = (data: any) => {
-    createJobMutation.mutate(data);
+    createTaskMutation.mutate(data);
   };
 
   const onSubmitContact = (data: any) => {
@@ -270,18 +227,10 @@ export default function Gantt() {
     setEditContactOpen(true);
   };
 
-  const addJobToTask = (taskId: number, propertyId: number) => {
-    setSelectedTaskId(taskId);
-    jobForm.setValue('taskId', taskId);
-    jobForm.setValue('propertyId', propertyId);
-    setNewJobOpen(true);
-  };
-
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', taskId.toString());
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -291,15 +240,11 @@ export default function Gantt() {
 
   const handleDrop = (e: React.DragEvent, targetTaskId: number) => {
     e.preventDefault();
-    const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
-    if (draggedId && draggedId !== targetTaskId) {
-      console.log(`Reorder task ${draggedId} to position of task ${targetTaskId}`);
-      // Implementation would require a reorder API endpoint
+    if (draggedTaskId && draggedTaskId !== targetTaskId) {
+      // Here you would implement the reordering logic
+      console.log(`Move task ${draggedTaskId} to position of task ${targetTaskId}`);
+      // For now, just log - you'd need to implement a reorder endpoint
     }
-    setDraggedTaskId(null);
-  };
-
-  const handleDragEnd = () => {
     setDraggedTaskId(null);
   };
 
@@ -311,14 +256,6 @@ export default function Gantt() {
     acc[task.propertyId].push(task);
     return acc;
   }, {} as Record<number, Task[]>);
-
-  // Get available dependency tasks for the current property
-  const getAvailableDependencyTasks = (propertyId: number, excludeTaskId?: number) => {
-    return tasks.filter(task => 
-      task.propertyId === propertyId && 
-      task.id !== excludeTaskId
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -569,15 +506,11 @@ export default function Gantt() {
                   return (
                     <div 
                       key={task.id} 
-                      className={cn(
-                        "relative transition-opacity",
-                        draggedTaskId === task.id ? "opacity-50" : ""
-                      )}
+                      className="relative"
                       draggable
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, task.id)}
-                      onDragEnd={handleDragEnd}
                     >
                       {/* Timeline dot */}
                       <div className={cn(
@@ -682,14 +615,6 @@ export default function Gantt() {
                                     {taskQuotes.length} quote{taskQuotes.length !== 1 ? 's' : ''} available
                                   </div>
                                 )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => addJobToTask(task.id, property.id)}
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Job
-                                </Button>
                               </div>
 
                               {/* Job List */}
@@ -746,63 +671,36 @@ export default function Gantt() {
 
       {/* Task Creation Dialog */}
       <Dialog open={newTaskOpen} onOpenChange={setNewTaskOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           <Form {...taskForm}>
             <form onSubmit={taskForm.handleSubmit(onSubmitTask)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={taskForm.control}
-                  name="propertyId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Property</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a property" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(properties as Property[]).map((property) => (
-                            <SelectItem key={property.id} value={property.id.toString()}>
-                              {property.address}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={taskForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="legal">Legal</SelectItem>
-                          <SelectItem value="surveying">Surveying</SelectItem>
-                          <SelectItem value="estate_agent">Estate Agent</SelectItem>
-                          <SelectItem value="renovation">Renovation</SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={taskForm.control}
+                name="propertyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Property</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a property" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {(properties as Property[]).map((property) => (
+                          <SelectItem key={property.id} value={property.id.toString()}>
+                            {property.address}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={taskForm.control}
@@ -818,207 +716,23 @@ export default function Gantt() {
                 )}
               />
 
-              {/* Due Date Type Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Label className="text-sm font-medium">Due Date Type:</Label>
-                  <RadioGroup 
-                    value={dueDateType} 
-                    onValueChange={(value: 'absolute' | 'relative') => setDueDateType(value)}
-                    className="flex flex-row space-x-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="absolute" id="absolute" />
-                      <Label htmlFor="absolute" className="text-sm">Specific Date</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="relative" id="relative" />
-                      <Label htmlFor="relative" className="text-sm">Relative to Another Task</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {dueDateType === 'absolute' ? (
-                  <FormField
-                    control={taskForm.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0))
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={taskForm.control}
-                      name="dependsOnTaskId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Depends on Task</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select dependency" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {getAvailableDependencyTasks(taskForm.watch('propertyId')).map((task) => (
-                                <SelectItem key={task.id} value={task.id.toString()}>
-                                  {task.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={taskForm.control}
-                      name="relativeDueDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Days After Completion</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center gap-2">
-                              <Input 
-                                type="number" 
-                                min="0" 
-                                placeholder="0" 
-                                {...field} 
-                                value={field.value || ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                              />
-                              <Clock className="h-4 w-4 text-gray-400" />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-
               <FormField
                 control={taskForm.control}
-                name="quotable"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Quotable Task
-                      </FormLabel>
-                      <p className="text-sm text-gray-600">
-                        Enable quotes for this task (e.g., renovation work, contractor services)
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={taskForm.control}
-                name="description"
+                name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Task description..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" disabled={createTaskMutation.isPending}>
-                Create Task
-              </Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Job Creation Dialog */}
-      <Dialog open={newJobOpen} onOpenChange={setNewJobOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Job to Task</DialogTitle>
-          </DialogHeader>
-          <Form {...jobForm}>
-            <form onSubmit={jobForm.handleSubmit(onSubmitJob)} className="space-y-4">
-              <FormField
-                control={jobForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter job name..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={jobForm.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Type</FormLabel>
+                    <FormLabel>Category</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select job type" />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="contractor_work">Contractor Work</SelectItem>
-                        <SelectItem value="phone_call">Phone Call</SelectItem>
-                        <SelectItem value="email">Email</SelectItem>
-                        <SelectItem value="meeting">Meeting</SelectItem>
-                        <SelectItem value="document_review">Document Review</SelectItem>
+                        <SelectItem value="legal">Legal</SelectItem>
+                        <SelectItem value="surveying">Surveying</SelectItem>
+                        <SelectItem value="estate_agent">Estate Agent</SelectItem>
+                        <SelectItem value="renovation">Renovation</SelectItem>
                         <SelectItem value="general">General</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1028,21 +742,7 @@ export default function Gantt() {
               />
 
               <FormField
-                control={jobForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Job description..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={jobForm.control}
+                control={taskForm.control}
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -1083,8 +783,45 @@ export default function Gantt() {
                 )}
               />
 
-              <Button type="submit" disabled={createJobMutation.isPending}>
-                Add Job
+              <FormField
+                control={taskForm.control}
+                name="quotable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Quotable Task
+                      </FormLabel>
+                      <p className="text-sm text-gray-600">
+                        Enable quotes for this task (e.g., renovation work, contractor services)
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={taskForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Task description..." {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" disabled={createTaskMutation.isPending}>
+                Create Task
               </Button>
             </form>
           </Form>

@@ -64,6 +64,8 @@ export const tasks = pgTable("tasks", {
   status: text("status").notNull().default("not_started"), // not_started, in_progress, completed
   quotable: boolean("quotable").notNull().default(false), // whether this task can receive quotes
   dueDate: timestamp("due_date"),
+  dependsOnTaskId: integer("depends_on_task_id").references(() => tasks.id, { onDelete: "set null" }),
+  relativeDueDays: integer("relative_due_days"), // Days after dependency task completion
   createdAt: timestamp("created_at").defaultNow(),
 });
 
