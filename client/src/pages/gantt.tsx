@@ -161,7 +161,6 @@ export default function Gantt() {
       propertyId: 1,
       name: "",
       description: "",
-      type: "general",
       status: "pending",
       dueDate: undefined,
       contractorId: undefined,
@@ -381,12 +380,10 @@ export default function Gantt() {
       propertyId: job.propertyId,
       name: job.name,
       description: job.description || "",
-      type: job.type,
       status: job.status,
       dueDate: job.dueDate ? format(new Date(job.dueDate), "yyyy-MM-dd") : undefined,
       contractorId: job.contractorId || undefined,
       contactId: job.contactId || undefined,
-      notes: job.notes || "",
     });
     setEditJobOpen(true);
   };
@@ -1581,59 +1578,31 @@ export default function Gantt() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={jobForm.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select job type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="contractor_work">Contractor Work</SelectItem>
-                          <SelectItem value="phone_call">Phone Call</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="meeting">Meeting</SelectItem>
-                          <SelectItem value="document_review">Document Review</SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={jobForm.control}
-                  name="contractorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign to Contractor (optional)</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select contractor" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No contractor</SelectItem>
-                          {contractors.map((contractor) => (
-                            <SelectItem key={contractor.id} value={contractor.id.toString()}>
-                              {contractor.name} - {contractor.specialty}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={jobForm.control}
+                name="contractorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Contractor (optional)</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contractor" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No contractor</SelectItem>
+                        {contractors.map((contractor) => (
+                          <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                            {contractor.name} - {contractor.specialty}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={jobForm.control}
@@ -1825,29 +1794,6 @@ export default function Gantt() {
                   )}
                 />
                 
-                <FormField
-                  control={jobForm.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="task">Task</SelectItem>
-                          <SelectItem value="milestone">Milestone</SelectItem>
-                          <SelectItem value="inspection">Inspection</SelectItem>
-                          <SelectItem value="delivery">Delivery</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <FormField
