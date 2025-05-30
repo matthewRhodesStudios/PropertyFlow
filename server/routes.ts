@@ -55,6 +55,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/properties/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertPropertySchema.partial().parse(req.body);
+      const property = await storage.updateProperty(id, validatedData);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      res.json(property);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid property data", error });
+    }
+  });
+
   app.delete("/api/properties/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
