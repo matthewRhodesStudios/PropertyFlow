@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Gantt() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -33,6 +34,10 @@ export default function Gantt() {
 
   const { data: contacts = [] } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
+  });
+
+  const { data: jobs = [] } = useQuery<Job[]>({
+    queryKey: ["/api/jobs"],
   });
 
   const form = useForm<InsertTask>({
@@ -340,6 +345,54 @@ export default function Gantt() {
           </Dialog>
         </div>
       </div>
+
+      {/* Jobs Overview Section */}
+      {jobs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <span className="material-icons mr-2">work</span>
+            Active Projects
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {jobs.map((job) => (
+              <Card key={job.id} className="border-l-4 border-l-blue-500">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{job.name}</CardTitle>
+                    <Badge variant={job.status === 'completed' ? 'default' : job.status === 'in_progress' ? 'secondary' : 'outline'}>
+                      {job.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {getPropertyAddress(job.propertyId)}
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {job.description && (
+                    <p className="text-sm text-gray-700 mb-3">{job.description}</p>
+                  )}
+                  {job.budget && (
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <span className="material-icons text-sm mr-1">account_balance_wallet</span>
+                      Budget: {formatCurrency(job.budget)}
+                    </div>
+                  )}
+                  {job.targetEndDate && (
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <span className="material-icons text-sm mr-1">schedule</span>
+                      Target: {new Date(job.targetEndDate).toLocaleDateString()}
+                    </div>
+                  )}
+                  <div className="flex items-center text-sm text-gray-600">
+                    <span className="material-icons text-sm mr-1">assignment</span>
+                    {tasks.filter(task => task.jobId === job.id).length} tasks
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Professional Contacts */}
       <div className="mb-8">
