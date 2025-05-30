@@ -39,28 +39,30 @@ export const quotes = pgTable("quotes", {
   notes: text("notes"),
 });
 
-export const jobs = pgTable("jobs", {
-  id: serial("id").primaryKey(),
-  propertyId: integer("property_id").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  status: text("status").notNull().default("planning"), // planning, active, completed, on_hold
-  startDate: timestamp("start_date"),
-  targetEndDate: timestamp("target_end_date"),
-  budget: text("budget"),
-  notes: text("notes"),
-});
-
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull(),
-  jobId: integer("job_id"),
   title: text("title").notNull(),
   description: text("description"),
+  category: text("category").notNull().default("general"), // renovation, legal, surveying, estate_agent, general
+  status: text("status").notNull().default("not_started"), // not_started, in_progress, completed
   dueDate: timestamp("due_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const jobs = pgTable("jobs", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").notNull().references(() => tasks.id),
+  propertyId: integer("property_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("general"), // contractor_work, phone_call, email, meeting, document_review
   status: text("status").notNull().default("pending"), // pending, in_progress, completed
-  priority: text("priority").notNull().default("medium"), // low, medium, high
-  assignedTo: text("assigned_to"), // contractor name or other assignee
+  dueDate: timestamp("due_date"),
+  contractorId: integer("contractor_id"), // for contractor_work type
+  contactId: integer("contact_id"), // for calls, emails, meetings
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const documents = pgTable("documents", {
@@ -78,11 +80,13 @@ export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   company: text("company"),
-  role: text("role").notNull(), // agent, supplier, inspector, etc.
+  role: text("role").notNull(), // solicitor, surveyor, estate_agent, contractor, supplier, etc.
+  specialization: text("specialization"), // conveyancing, structural_survey, residential_sales, etc.
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
   notes: text("notes"),
+  propertyId: integer("property_id"), // can be linked to specific property
 });
 
 // Insert schemas

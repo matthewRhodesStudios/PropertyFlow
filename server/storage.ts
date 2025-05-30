@@ -26,21 +26,22 @@ export interface IStorage {
   updateQuote(id: number, quote: Partial<InsertQuote>): Promise<Quote | undefined>;
   deleteQuote(id: number): Promise<boolean>;
 
-  // Jobs
-  getJobs(): Promise<Job[]>;
-  getJobsByProperty(propertyId: number): Promise<Job[]>;
-  getJob(id: number): Promise<Job | undefined>;
-  createJob(job: InsertJob): Promise<Job>;
-  updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined>;
-  deleteJob(id: number): Promise<boolean>;
-
-  // Tasks
+  // Tasks (main categories)
   getTasks(): Promise<Task[]>;
   getTasksByProperty(propertyId: number): Promise<Task[]>;
   getTask(id: number): Promise<Task | undefined>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, task: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: number): Promise<boolean>;
+
+  // Jobs (sub-tasks under main tasks)
+  getJobs(): Promise<Job[]>;
+  getJobsByProperty(propertyId: number): Promise<Job[]>;
+  getJobsByTask(taskId: number): Promise<Job[]>;
+  getJob(id: number): Promise<Job | undefined>;
+  createJob(job: InsertJob): Promise<Job>;
+  updateJob(id: number, job: Partial<InsertJob>): Promise<Job | undefined>;
+  deleteJob(id: number): Promise<boolean>;
 
   // Documents
   getDocuments(): Promise<Document[]>;
