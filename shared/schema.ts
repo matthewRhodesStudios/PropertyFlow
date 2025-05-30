@@ -38,6 +38,21 @@ export const quotes = pgTable("quotes", {
   dateReceived: timestamp("date_received").notNull().defaultNow(),
   validUntil: timestamp("valid_until"),
   notes: text("notes"),
+  attachmentPath: text("attachment_path"), // path to uploaded file
+  attachmentName: text("attachment_name"), // original filename
+});
+
+// Quote inquiries - track who you've approached for quotes
+export const quoteInquiries = pgTable("quote_inquiries", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull(),
+  taskId: integer("task_id").references(() => tasks.id).notNull(),
+  contractorId: integer("contractor_id").notNull(),
+  dateApproached: timestamp("date_approached").notNull().defaultNow(),
+  method: text("method").notNull().default("email"), // email, phone, in_person, website
+  status: text("status").notNull().default("awaiting"), // awaiting, received, declined, no_response
+  notes: text("notes"),
+  quoteId: integer("quote_id").references(() => quotes.id), // linked when quote is received
 });
 
 export const tasks = pgTable("tasks", {
@@ -102,14 +117,22 @@ export const insertContractorSchema = createInsertSchema(contractors).omit({
 
 export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
+  dateReceived: true,
+});
+
+export const insertQuoteInquirySchema = createInsertSchema(quoteInquiries).omit({
+  id: true,
+  dateApproached: true,
 });
 
 export const insertJobSchema = createInsertSchema(jobs).omit({
   id: true,
+  createdAt: true,
 });
 
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
+  createdAt: true,
 });
 
 export const insertDocumentSchema = createInsertSchema(documents).omit({
@@ -129,6 +152,9 @@ export type InsertContractor = z.infer<typeof insertContractorSchema>;
 
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
+
+export type QuoteInquiry = typeof quoteInquiries.$inferSelect;
+export type InsertQuoteInquiry = z.infer<typeof insertQuoteInquirySchema>;
 
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
