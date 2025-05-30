@@ -155,6 +155,8 @@ export default function Expenses() {
   });
 
   const onSubmit = (data: FormData) => {
+    console.log("Form data:", data);
+    
     const expenseData: InsertExpense = {
       propertyId: parseInt(data.propertyId),
       taskId: data.taskId ? parseInt(data.taskId) : null,
@@ -168,9 +170,11 @@ export default function Expenses() {
         ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
         : data.customSupplier || null,
       receiptNumber: data.receiptNumber || null,
-      vatAmount: data.vatAmount || null,
+      vatAmount: data.vatAmount ? parseFloat(data.vatAmount) : null,
       date: new Date(data.date),
     };
+    
+    console.log("Expense data being sent:", expenseData);
 
     if (editingExpense) {
       updateExpenseMutation.mutate({ id: editingExpense.id, data: expenseData });
