@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 export default function Gantt() {
   const [expandedTasks, setExpandedTasks] = useState<Record<number, boolean>>({});
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [editTaskOpen, setEditTaskOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newJobOpen, setNewJobOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
@@ -104,6 +106,19 @@ export default function Gantt() {
     },
   });
 
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      return apiRequest("PATCH", `/api/tasks/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      setEditTaskOpen(false);
+      setEditingTask(null);
+      editTaskForm.reset();
+    },
+  });
+
   const deleteTaskMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/tasks/${id}`),
     onSuccess: () => {
@@ -156,6 +171,22 @@ export default function Gantt() {
       phone: "",
       address: "",
       notes: "",
+    },
+  });
+
+  const editTaskForm = useForm({
+    resolver: zodResolver(insertTaskSchema),
+    defaultValues: {
+      propertyId: 1,
+      title: "",
+      description: "",
+      category: "general",
+      status: "not_started",
+      quotable: false,
+      dueDate: undefined,
+      dependsOnTaskId: undefined,
+      relativeDueDays: undefined,
+      relativeDirection: "after",
     },
   });
 
@@ -278,6 +309,44 @@ export default function Gantt() {
       role: type,
     });
     setEditContactOpen(true);
+  };
+
+  const startEditTask = (task: Task) => {
+    setEditingTask(task);
+    setDueDateType(task.dependsOnTaskId ? 'relative' : 'absolute');
+    editTaskForm.reset({
+      propertyId: task.propertyId,
+      title: task.title,
+      description: task.description || "",
+      category: task.category,
+      status: task.status,
+      quotable: task.quotable,
+      dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : undefined,
+      dependsOnTaskId: task.dependsOnTaskId || undefined,
+      relativeDueDays: task.relativeDueDays || undefined,
+      relativeDirection: task.relativeDirection || "after",
+    });
+    setEditTaskOpen(true);
+  };
+
+  const onSubmitEditTask = (data: any) => {
+    if (!editingTask) return;
+    
+    const processedData = { ...data };
+    
+    // Handle date logic based on type
+    if (dueDateType === 'relative') {
+      processedData.dueDate = null; // Clear absolute date when using relative
+    } else {
+      processedData.dependsOnTaskId = null;
+      processedData.relativeDueDays = null;
+      processedData.relativeDirection = null;
+    }
+    
+    updateTaskMutation.mutate({
+      id: editingTask.id,
+      data: processedData
+    });
   };
 
   const addContactForProperty = (propertyId: number, type: 'solicitor' | 'estate_agent') => {
@@ -795,6 +864,17 @@ export default function Gantt() {
                                     title="Drag to reorder"
                                   >
                                     <GripVertical className="h-4 w-4 text-gray-400" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditTask(task);
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     size="sm"
