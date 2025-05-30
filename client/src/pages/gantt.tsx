@@ -239,7 +239,6 @@ export default function Gantt() {
   };
 
   const editContact = (contact: Contact, type: 'solicitor' | 'estate_agent') => {
-    console.log('Editing contact:', contact, 'Type:', type);
     setEditingContact(contact);
     setContactType(type);
     setSelectedPropertyId(contact.propertyId);
@@ -253,7 +252,6 @@ export default function Gantt() {
       specialization: contact.specialization || "",
     });
     setEditContactOpen(true);
-    console.log('Dialog should be open now');
   };
 
   const addContactForProperty = (propertyId: number, type: 'solicitor' | 'estate_agent') => {
