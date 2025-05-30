@@ -1159,7 +1159,9 @@ export default function Gantt() {
             </DialogTitle>
           </DialogHeader>
           <Form {...contactForm}>
-            <form onSubmit={contactForm.handleSubmit(onSubmitContact)} className="space-y-4">
+            <form onSubmit={contactForm.handleSubmit(onSubmitContact, (errors) => {
+              console.log('Form validation errors:', errors);
+            })} className="space-y-4">
               <FormField
                 control={contactForm.control}
                 name="name"
