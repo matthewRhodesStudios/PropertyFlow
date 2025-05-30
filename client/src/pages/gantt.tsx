@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, CheckCircle, Clock, AlertCircle, Edit2, PoundSterling } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Calendar, User, Phone, Mail, Briefcase, CheckCircle, Clock, AlertCircle, Edit2, PoundSterling, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,14 @@ export default function Gantt() {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       setEditJobOpen(false);
       setEditingJob(null);
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/tasks/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
     },
   });
 

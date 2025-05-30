@@ -261,13 +261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", async (req, res) => {
     try {
-      console.log("Task creation request body:", req.body);
+      // Convert date string to Date object if present
+      if (req.body.dueDate && typeof req.body.dueDate === 'string') {
+        req.body.dueDate = new Date(req.body.dueDate);
+      }
+      
       const validatedData = insertTaskSchema.parse(req.body);
-      console.log("Validated data:", validatedData);
       const task = await storage.createTask(validatedData);
       res.status(201).json(task);
     } catch (error) {
-      console.error("Task creation error:", error);
       res.status(400).json({ message: "Invalid task data", error });
     }
   });
@@ -275,6 +277,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/tasks/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      // Convert date string to Date object if present
+      if (req.body.dueDate && typeof req.body.dueDate === 'string') {
+        req.body.dueDate = new Date(req.body.dueDate);
+      }
       const updates = insertTaskSchema.partial().parse(req.body);
       const task = await storage.updateTask(id, updates);
       if (!task) {
