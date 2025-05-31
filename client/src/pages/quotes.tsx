@@ -733,202 +733,177 @@ export default function Quotes() {
                     </div>
                   );
                 })}
+                
+                {/* Show job quotes within the same property */}
+                {quotesByPropertyAndJob[parseInt(propertyId)] && Object.entries(quotesByPropertyAndJob[parseInt(propertyId)]).map(([jobId, jobQuotes]) => {
+                  const job = jobs.find(j => j.id === parseInt(jobId));
+                  const task = tasks.find(t => t.id === job?.taskId);
+                  if (!job) return null;
+
+                  const jobKey = `${propertyId}-job-${jobId}`;
+                  const isCollapsed = collapsedTasks.has(jobKey);
+                  const statusCounts = getQuoteStatusCounts(jobQuotes);
+
+                  return (
+                    <div key={jobKey} className="space-y-3">
+                      <div 
+                        className={`flex items-center gap-3 border-b pb-2 cursor-pointer p-2 rounded border-2 border-blue-200 bg-blue-50 ${getTaskHeaderColor(jobQuotes)}`}
+                        onClick={() => toggleTaskCollapse(jobKey)}
+                      >
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        )}
+                        <h3 className="font-semibold text-lg">
+                          🔧 {job.name}
+                        </h3>
+                        <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                          Job Quotes
+                        </Badge>
+                        {task && (
+                          <Badge variant="outline" className="text-xs">
+                            {task.title}
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-gray-500 ml-auto">
+                          <span>{jobQuotes.length} total</span>
+                          {statusCounts.pending > 0 && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                              {statusCounts.pending} pending
+                            </Badge>
+                          )}
+                          {statusCounts.accepted > 0 && (
+                            <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                              {statusCounts.accepted} accepted
+                            </Badge>
+                          )}
+                          {statusCounts.rejected > 0 && (
+                            <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                              {statusCounts.rejected} rejected
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {!isCollapsed && (
+                        <div className="space-y-3">
+                        {jobQuotes.map((quote) => {
+                          const contractor = getContractorForQuote(quote);
+
+                          return (
+                            <div key={quote.id} className={cn(
+                              "p-4 rounded-lg border-2",
+                              getStatusColor(quote.status)
+                            )}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    {getStatusIcon(quote.status)}
+                                    <h3 className="font-semibold text-lg">{contractor?.name || 'Unknown Contractor'}</h3>
+                                    <Badge className={getStatusColor(quote.status)}>
+                                      {quote.status}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="mb-3">
+                                    <span className="text-sm font-medium text-gray-600">Service: </span>
+                                    <span className="text-sm">{quote.service}</span>
+                                  </div>
+                                  
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Received:</span>
+                                      <span>{format(new Date(quote.dateReceived), "PPP")}</span>
+                                    </div>
+                            
+                                    {quote.validUntil && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">Valid until:</span>
+                                        <span>{format(new Date(quote.validUntil), "PPP")}</span>
+                                      </div>
+                                    )}
+                            
+                                    {quote.notes && (
+                                      <div className="flex items-start gap-2">
+                                        <span className="font-medium">Notes:</span>
+                                        <span className="text-gray-600">{quote.notes}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                        
+                                <div className="flex flex-col items-end gap-3">
+                                  <div className="text-right">
+                                    <div className="text-2xl font-bold text-green-600">
+                                      {formatCurrency(quote.amount)}
+                                    </div>
+                                  </div>
+                          
+                                  <div className="flex gap-2">
+                                    {quote.status === 'pending' && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="border-green-500 text-green-600 hover:bg-green-50"
+                                          onClick={() => handleStatusChange(quote.id, 'accepted')}
+                                        >
+                                          Accept
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="border-red-500 text-red-600 hover:bg-red-50"
+                                          onClick={() => handleStatusChange(quote.id, 'rejected')}
+                                        >
+                                          Reject
+                                        </Button>
+                                      </>
+                                    )}
+                            
+                                    {quote.status !== 'pending' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleStatusChange(quote.id, 'pending')}
+                                      >
+                                        Reset to Pending
+                                      </Button>
+                                    )}
+                            
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                      onClick={() => handleEdit(quote)}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-red-500 text-red-600 hover:bg-red-50"
+                                      onClick={() => deleteQuoteMutation.mutate(quote.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
         );
-      })}
-
-      {/* Show job quotes as separate sections */}
-      {Object.entries(quotesByPropertyAndJob).map(([propertyId, propertyJobs]) => {
-        const property = properties.find(p => p.id === parseInt(propertyId));
-        if (!property) return null;
-
-        return Object.entries(propertyJobs).map(([jobId, jobQuotes]) => {
-          const job = jobs.find(j => j.id === parseInt(jobId));
-          const task = tasks.find(t => t.id === job?.taskId);
-          if (!job) return null;
-
-          const jobKey = `${propertyId}-job-${jobId}`;
-          const isCollapsed = collapsedTasks.has(jobKey);
-          const statusCounts = getQuoteStatusCounts(jobQuotes);
-
-          return (
-            <Card key={jobKey} className="border-2 border-blue-200">
-              <CardHeader className="bg-blue-50">
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{property.address}</span>
-                    <Badge variant="outline" className="border-2">{property.type}</Badge>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
-                      Job: {job.name}
-                    </Badge>
-                    {task && (
-                      <Badge variant="outline" className="text-xs">
-                        {task.title}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {jobQuotes.length} quote{jobQuotes.length !== 1 ? 's' : ''}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-6 p-6">
-                  <div className="space-y-3">
-                    <div 
-                      className={`flex items-center gap-3 border-b pb-2 cursor-pointer p-2 rounded border-2 ${getTaskHeaderColor(jobQuotes)}`}
-                      onClick={() => toggleTaskCollapse(jobKey)}
-                    >
-                      {isCollapsed ? (
-                        <ChevronRight className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      )}
-                      <h3 className="font-semibold text-lg">
-                        🔧 {job.name}
-                      </h3>
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
-                        Job Quotes
-                      </Badge>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 ml-auto">
-                        <span>{jobQuotes.length} total</span>
-                        {statusCounts.pending > 0 && (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
-                            {statusCounts.pending} pending
-                          </Badge>
-                        )}
-                        {statusCounts.accepted > 0 && (
-                          <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                            {statusCounts.accepted} accepted
-                          </Badge>
-                        )}
-                        {statusCounts.rejected > 0 && (
-                          <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
-                            {statusCounts.rejected} rejected
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {!isCollapsed && (
-                      <div className="space-y-3">
-                      {jobQuotes.map((quote) => {
-                        const contractor = getContractorForQuote(quote);
-
-                        return (
-                          <div key={quote.id} className={cn(
-                            "p-4 rounded-lg border-2",
-                            getStatusColor(quote.status)
-                          )}>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  {getStatusIcon(quote.status)}
-                                  <h3 className="font-semibold text-lg">{contractor?.name || 'Unknown Contractor'}</h3>
-                                  <Badge className={getStatusColor(quote.status)}>
-                                    {quote.status}
-                                  </Badge>
-                                </div>
-                                
-                                <div className="mb-3">
-                                  <span className="text-sm font-medium text-gray-600">Service: </span>
-                                  <span className="text-sm">{quote.service}</span>
-                                </div>
-                                
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">Received:</span>
-                                    <span>{format(new Date(quote.dateReceived), "PPP")}</span>
-                                  </div>
-                          
-                                  {quote.validUntil && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">Valid until:</span>
-                                      <span>{format(new Date(quote.validUntil), "PPP")}</span>
-                                    </div>
-                                  )}
-                          
-                                  {quote.notes && (
-                                    <div className="flex items-start gap-2">
-                                      <span className="font-medium">Notes:</span>
-                                      <span className="text-gray-600">{quote.notes}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                      
-                              <div className="flex flex-col items-end gap-3">
-                                <div className="text-right">
-                                  <div className="text-2xl font-bold text-green-600">
-                                    {formatCurrency(quote.amount)}
-                                  </div>
-                                </div>
-                        
-                                <div className="flex gap-2">
-                                  {quote.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-green-500 text-green-600 hover:bg-green-50"
-                                        onClick={() => handleStatusChange(quote.id, 'accepted')}
-                                      >
-                                        Accept
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-red-500 text-red-600 hover:bg-red-50"
-                                        onClick={() => handleStatusChange(quote.id, 'rejected')}
-                                      >
-                                        Reject
-                                      </Button>
-                                    </>
-                                  )}
-                          
-                                  {quote.status !== 'pending' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleStatusChange(quote.id, 'pending')}
-                                    >
-                                      Reset to Pending
-                                    </Button>
-                                  )}
-                          
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                                    onClick={() => handleEdit(quote)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-red-500 text-red-600 hover:bg-red-50"
-                                    onClick={() => deleteQuoteMutation.mutate(quote.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        });
       })}
 
       {quotes.length === 0 && quotableTasks.length > 0 && (
