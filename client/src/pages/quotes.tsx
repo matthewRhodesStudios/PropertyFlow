@@ -95,6 +95,7 @@ export default function Quotes() {
     defaultValues: {
       propertyId: 1,
       taskId: undefined,
+      jobId: undefined,
       contractorId: 1,
       service: "",
       amount: "",
@@ -122,6 +123,7 @@ export default function Quotes() {
     form.reset({
       propertyId: quote.propertyId,
       taskId: quote.taskId || undefined,
+      jobId: quote.jobId || undefined,
       contractorId: quote.contractorId || undefined,
       service: quote.service,
       amount: quote.amount,
@@ -312,7 +314,10 @@ export default function Quotes() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Task Category</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                        <Select onValueChange={(value) => {
+                          field.onChange(parseInt(value));
+                          form.setValue("jobId", undefined);
+                        }} value={field.value?.toString()}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select quotable task" />
@@ -324,6 +329,42 @@ export default function Quotes() {
                               .map((task) => (
                               <SelectItem key={task.id} value={task.id.toString()}>
                                 {task.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="jobId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Job (Optional)</FormLabel>
+                        <Select 
+                          onValueChange={(value) => field.onChange(parseInt(value))} 
+                          value={field.value?.toString()}
+                          disabled={!form.watch("taskId")}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select quotable job" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {quotableJobs
+                              .filter(job => {
+                                const propertyId = form.watch("propertyId");
+                                const taskId = form.watch("taskId");
+                                return (!propertyId || job.propertyId === propertyId) && 
+                                       (!taskId || job.taskId === taskId);
+                              })
+                              .map((job) => (
+                              <SelectItem key={job.id} value={job.id.toString()}>
+                                {job.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -456,14 +497,14 @@ export default function Quotes() {
         </Dialog>
       </div>
 
-      {quotableTasks.length === 0 && (
+      {quotableTasks.length === 0 && quotableJobs.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <div className="text-gray-500">
               <PoundSterling className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">No Quotable Tasks Found</h3>
-              <p className="mb-4">You need to create tasks and mark them as "quotable" before you can add quotes.</p>
-              <p className="text-sm">Go to the Project Timeline page and create tasks with the "Quotable Task" checkbox enabled.</p>
+              <h3 className="text-lg font-semibold mb-2">No Quotable Items Found</h3>
+              <p className="mb-4">You need to create tasks or jobs and mark them as "quotable" before you can add quotes.</p>
+              <p className="text-sm">Go to the Project Timeline page and create tasks or jobs with the "Quotable" checkbox enabled.</p>
             </div>
           </CardContent>
         </Card>
@@ -537,6 +578,7 @@ export default function Quotes() {
                         <div className="space-y-3">
                         {taskQuotes.map((quote) => {
                           const contractor = getContractorForQuote(quote);
+                          const job = getJobForQuote(quote);
 
                           return (
                             <div key={quote.id} className={cn(
@@ -551,6 +593,11 @@ export default function Quotes() {
                                     <Badge className={getStatusColor(quote.status)}>
                                       {quote.status}
                                     </Badge>
+                                    {job && (
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                        Job: {job.name}
+                                      </Badge>
+                                    )}
                                   </div>
                                   
                                   <div className="mb-3">
@@ -638,6 +685,38 @@ export default function Quotes() {
                                     </Button>
                                   </div>
                                 </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Show quotable jobs for this task that don't have quotes yet */}
+                        {quotableJobsByProperty[parseInt(propertyId)]?.[task.id]?.map((job) => {
+                          const hasQuotes = quotes.some(quote => quote.jobId === job.id);
+                          if (hasQuotes) return null; // Don't show jobs that already have quotes
+                          
+                          return (
+                            <div key={`job-${job.id}`} className="p-4 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                    Job: {job.name}
+                                  </Badge>
+                                  <span className="text-sm text-gray-600">Quotable job - no quotes yet</span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    form.setValue("propertyId", job.propertyId);
+                                    form.setValue("taskId", job.taskId);
+                                    form.setValue("jobId", job.id);
+                                    setNewQuoteOpen(true);
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Quote
+                                </Button>
                               </div>
                             </div>
                           );
