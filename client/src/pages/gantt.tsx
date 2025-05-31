@@ -413,20 +413,7 @@ export default function Gantt() {
     setEditTaskOpen(true);
   };
 
-  const startEditJob = (job: Job) => {
-    setEditingJob(job);
-    jobForm.reset({
-      taskId: job.taskId,
-      propertyId: job.propertyId,
-      name: job.name,
-      description: job.description || "",
-      status: job.status,
-      dueDate: job.dueDate ? format(new Date(job.dueDate), "yyyy-MM-dd") : undefined,
-      contractorId: job.contractorId || undefined,
-      contactId: job.contactId || undefined,
-    });
-    setEditJobOpen(true);
-  };
+
 
   const onSubmitEditTask = (data: any) => {
     if (!editingTask) return;
@@ -470,6 +457,21 @@ export default function Gantt() {
     jobForm.setValue('taskId', taskId);
     jobForm.setValue('propertyId', propertyId);
     setNewJobOpen(true);
+  };
+
+  const startEditJob = (job: Job) => {
+    setEditingJob(job);
+    jobForm.reset({
+      taskId: job.taskId,
+      propertyId: job.propertyId,
+      name: job.name,
+      description: job.description || "",
+      status: job.status,
+      dueDate: job.dueDate || undefined,
+      contractorId: job.contractorId || undefined,
+      contactId: job.contactId || undefined,
+    });
+    setEditJobOpen(true);
   };
 
   // Drag and drop handlers
@@ -1202,10 +1204,7 @@ export default function Gantt() {
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          onClick={() => {
-                                            setEditingJob(job);
-                                            setEditJobOpen(true);
-                                          }}
+                                          onClick={() => startEditJob(job)}
                                           className="h-6 w-6 p-0"
                                         >
                                           <Edit2 className="h-3 w-3" />
