@@ -34,6 +34,7 @@ export default function Gantt() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [newEventOpen, setNewEventOpen] = useState(false);
+  const [editEventOpen, setEditEventOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [contactType, setContactType] = useState<'solicitor' | 'estate_agent'>('solicitor');
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -127,8 +128,15 @@ export default function Gantt() {
     mutationFn: ({ id, ...data }: any) => apiRequest("PATCH", `/api/events/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-      setNewEventOpen(false);
+      setEditEventOpen(false);
       setEditingEvent(null);
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/events/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     },
   });
 
@@ -1088,14 +1096,14 @@ export default function Gantt() {
                                       
                                       return (
                                         <div key={event.id} className="flex items-center justify-between p-2 bg-purple-50 rounded border-l-4 border-purple-300">
-                                          <div className="flex items-center gap-3">
+                                          <div className="flex items-center gap-3 flex-1">
                                             <div className={cn(
                                               "w-2 h-2 rounded-full",
                                               event.status === 'completed' ? 'bg-green-500' :
                                               event.status === 'cancelled' ? 'bg-red-500' :
                                               'bg-blue-500'
                                             )}></div>
-                                            <div>
+                                            <div className="flex-1">
                                               <span className="text-sm font-medium">{event.title}</span>
                                               <div className="text-xs text-gray-500">
                                                 {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
@@ -1107,14 +1115,43 @@ export default function Gantt() {
                                               </div>
                                             </div>
                                           </div>
-                                          <Badge className={cn(
-                                            "text-xs",
-                                            event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                            event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                            'bg-blue-100 text-blue-800'
-                                          )}>
-                                            {event.type}
-                                          </Badge>
+                                          <div className="flex items-center gap-2">
+                                            <Badge className={cn(
+                                              "text-xs",
+                                              event.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                              event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                              'bg-blue-100 text-blue-800'
+                                            )}>
+                                              {event.type}
+                                            </Badge>
+                                            <div className="flex gap-1">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                  setEditingEvent(event);
+                                                  setSelectedTaskId(task.id);
+                                                  setSelectedPropertyId(property.id);
+                                                  setEditEventOpen(true);
+                                                }}
+                                                className="h-6 w-6 p-0"
+                                              >
+                                                <Edit2 className="h-3 w-3" />
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                  if (confirm(`Are you sure you want to delete the event "${event.title}"?`)) {
+                                                    deleteEventMutation.mutate(event.id);
+                                                  }
+                                                }}
+                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
                                         </div>
                                       );
                                     })}
@@ -2146,6 +2183,172 @@ export default function Gantt() {
                 disabled={createEventMutation.isPending}
               >
                 Schedule Event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editEventOpen} onOpenChange={setEditEventOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Event Title</label>
+              <Input
+                name="editTitle"
+                defaultValue={editingEvent?.title || ''}
+                placeholder="e.g., Property Survey"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Event Type</label>
+              <select name="editType" defaultValue={editingEvent?.type || 'survey'} className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="survey">Survey</option>
+                <option value="viewing">Viewing</option>
+                <option value="meeting">Meeting</option>
+                <option value="appointment">Appointment</option>
+                <option value="inspection">Inspection</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Date & Time</label>
+                <Input
+                  type="datetime-local"
+                  name="editScheduledAt"
+                  defaultValue={editingEvent ? format(new Date(editingEvent.scheduledAt), "yyyy-MM-dd'T'HH:mm") : ''}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Duration (minutes)</label>
+                <Input
+                  type="number"
+                  name="editDuration"
+                  defaultValue={editingEvent?.duration || 60}
+                  placeholder="60"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Location</label>
+              <Input
+                name="editLocation"
+                defaultValue={editingEvent?.location || ''}
+                placeholder="Property address or meeting location"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Status</label>
+              <select name="editStatus" defaultValue={editingEvent?.status || 'scheduled'} className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="scheduled">Scheduled</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Assign to (optional)</label>
+              <select name="editAssigneeId" defaultValue={
+                editingEvent?.contactId ? `contact-${editingEvent.contactId}` :
+                editingEvent?.contractorId ? `contractor-${editingEvent.contractorId}` :
+                'none'
+              } className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="none">No assignment</option>
+                <optgroup label="Contacts">
+                  {contacts.map((contact) => (
+                    <option key={`contact-${contact.id}`} value={`contact-${contact.id}`}>
+                      {contact.name} ({contact.role})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Contractors">
+                  {contractors.map((contractor) => (
+                    <option key={`contractor-${contractor.id}`} value={`contractor-${contractor.id}`}>
+                      {contractor.name} - {contractor.specialty}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                name="editNotes"
+                defaultValue={editingEvent?.notes || ''}
+                placeholder="Additional notes..."
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditEventOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={(e) => {
+                  const container = e.currentTarget.closest('.space-y-4') as HTMLElement;
+                  if (container && editingEvent) {
+                    const titleInput = container.querySelector('[name="editTitle"]') as HTMLInputElement;
+                    const typeSelect = container.querySelector('[name="editType"]') as HTMLSelectElement;
+                    const scheduledAtInput = container.querySelector('[name="editScheduledAt"]') as HTMLInputElement;
+                    const durationInput = container.querySelector('[name="editDuration"]') as HTMLInputElement;
+                    const locationInput = container.querySelector('[name="editLocation"]') as HTMLInputElement;
+                    const statusSelect = container.querySelector('[name="editStatus"]') as HTMLSelectElement;
+                    const assigneeSelect = container.querySelector('[name="editAssigneeId"]') as HTMLSelectElement;
+                    const notesTextarea = container.querySelector('[name="editNotes"]') as HTMLTextAreaElement;
+                    
+                    if (titleInput && typeSelect && scheduledAtInput) {
+                      const scheduledAt = new Date(scheduledAtInput.value);
+                      const duration = parseInt(durationInput?.value || '60') || 60;
+                      const assigneeValue = assigneeSelect?.value;
+                      
+                      // Parse assignee value to determine if it's a contact or contractor
+                      let contactId = undefined;
+                      let contractorId = undefined;
+                      
+                      if (assigneeValue && assigneeValue !== 'none') {
+                        if (assigneeValue.startsWith('contact-')) {
+                          contactId = parseInt(assigneeValue.replace('contact-', ''));
+                        } else if (assigneeValue.startsWith('contractor-')) {
+                          contractorId = parseInt(assigneeValue.replace('contractor-', ''));
+                        }
+                      }
+                      
+                      updateEventMutation.mutate({
+                        id: editingEvent.id,
+                        title: titleInput.value,
+                        description: editingEvent.description,
+                        type: typeSelect.value,
+                        scheduledAt: scheduledAt,
+                        duration: duration,
+                        location: locationInput?.value || '',
+                        status: statusSelect.value,
+                        notes: notesTextarea?.value || '',
+                        propertyId: editingEvent.propertyId,
+                        taskId: editingEvent.taskId,
+                        contactId: contactId,
+                        contractorId: contractorId,
+                      });
+                    }
+                  }
+                }}
+                disabled={updateEventMutation.isPending}
+              >
+                Update Event
               </Button>
             </div>
           </div>
