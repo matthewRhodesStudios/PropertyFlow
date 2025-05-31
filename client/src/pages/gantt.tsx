@@ -1115,34 +1115,12 @@ export default function Gantt() {
                                 <p className="text-gray-600">{task.description}</p>
                               )}
                               
-                              <div className="flex gap-4 mb-4">
-                                {taskQuotes.length > 0 && (
-                                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                                    <PoundSterling className="h-4 w-4" />
-                                    {taskQuotes.length} quote{taskQuotes.length !== 1 ? 's' : ''} available
-                                  </div>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => addJobToTask(task.id, property.id)}
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add Job
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedTaskId(task.id);
-                                    setSelectedPropertyId(property.id);
-                                    setNewEventOpen(true);
-                                  }}
-                                >
-                                  <Calendar className="h-4 w-4 mr-2" />
-                                  Schedule Event
-                                </Button>
-                              </div>
+                              {taskQuotes.length > 0 && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                                  <PoundSterling className="h-4 w-4" />
+                                  {taskQuotes.length} quote{taskQuotes.length !== 1 ? 's' : ''} available
+                                </div>
+                              )}
 
                               {/* Quote List */}
                               {taskQuotes.length > 0 && (
@@ -1190,16 +1168,11 @@ export default function Gantt() {
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          onClick={() => {
-                                            setNoteTaskId(task.id);
-                                            noteForm.setValue('taskId', task.id);
-                                            noteForm.setValue('propertyId', property.id);
-                                            setNewNoteOpen(true);
-                                          }}
+                                          onClick={() => addJobToTask(task.id, property.id)}
                                           className="h-6 px-2 text-xs"
                                         >
                                           <Plus className="h-3 w-3 mr-1" />
-                                          Add Note
+                                          Add Job
                                         </Button>
                                         <Button
                                           size="sm"
@@ -1213,6 +1186,20 @@ export default function Gantt() {
                                         >
                                           <Calendar className="h-3 w-3 mr-1" />
                                           Schedule Event
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setNoteTaskId(task.id);
+                                            noteForm.setValue('taskId', task.id);
+                                            noteForm.setValue('propertyId', property.id);
+                                            setNewNoteOpen(true);
+                                          }}
+                                          className="h-6 px-2 text-xs"
+                                        >
+                                          <Plus className="h-3 w-3 mr-1" />
+                                          Add Note
                                         </Button>
                                       </div>
                                     </div>
