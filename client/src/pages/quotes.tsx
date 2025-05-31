@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertQuoteSchema, type Quote, type Property, type Contractor, type Task } from "@shared/schema";
+import { insertQuoteSchema, type Quote, type Property, type Contractor, type Task, type Job } from "@shared/schema";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,8 +42,13 @@ export default function Quotes() {
     queryKey: ["/api/tasks"],
   });
 
-  // Filter to only show quotable tasks
+  const { data: jobs = [] } = useQuery<Job[]>({
+    queryKey: ["/api/jobs"],
+  });
+
+  // Filter to only show quotable tasks and jobs
   const quotableTasks = tasks.filter(task => task.quotable);
+  const quotableJobs = jobs.filter(job => job.quotable);
 
   // Mutations
   const createQuoteMutation = useMutation({
@@ -209,6 +214,10 @@ export default function Quotes() {
     return contractors.find(contractor => contractor.id === quote.contractorId);
   };
 
+  const getJobForQuote = (quote: Quote) => {
+    return jobs.find(job => job.id === quote.jobId);
+  };
+
   // Group all quotable tasks by property, including those without quotes
   const quotableTasksByProperty = quotableTasks.reduce((acc, task) => {
     if (!acc[task.propertyId]) {
@@ -217,6 +226,18 @@ export default function Quotes() {
     acc[task.propertyId].push(task);
     return acc;
   }, {} as Record<number, Task[]>);
+
+  // Group all quotable jobs by property and task
+  const quotableJobsByProperty = quotableJobs.reduce((acc, job) => {
+    if (!acc[job.propertyId]) {
+      acc[job.propertyId] = {};
+    }
+    if (!acc[job.propertyId][job.taskId]) {
+      acc[job.propertyId][job.taskId] = [];
+    }
+    acc[job.propertyId][job.taskId].push(job);
+    return acc;
+  }, {} as Record<number, Record<number, Job[]>>);
 
   // Group quotes by property and task
   const quotesByPropertyAndTask = quotes.reduce((acc, quote) => {
