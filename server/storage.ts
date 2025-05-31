@@ -79,6 +79,15 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: number, event: Partial<InsertEvent>): Promise<Event | undefined>;
   deleteEvent(id: number): Promise<boolean>;
+
+  // Notes
+  getNotes(): Promise<Note[]>;
+  getNotesByProperty(propertyId: number): Promise<Note[]>;
+  getNotesByTask(taskId: number): Promise<Note[]>;
+  getNote(id: number): Promise<Note | undefined>;
+  createNote(note: InsertNote): Promise<Note>;
+  updateNote(id: number, note: Partial<InsertNote>): Promise<Note | undefined>;
+  deleteNote(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
