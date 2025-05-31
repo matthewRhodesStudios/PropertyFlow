@@ -304,6 +304,43 @@ export default function Gantt() {
     return notes.filter(note => note.taskId === taskId);
   };
 
+  // Create a unified timeline for a task combining jobs, events, and notes
+  const getTaskTimeline = (taskId: number) => {
+    const taskJobs = getTaskJobs(taskId);
+    const taskEvents = events.filter(event => event.taskId === taskId);
+    const taskNotes = getTaskNotes(taskId);
+
+    const timelineItems = [
+      ...taskJobs.map(job => {
+        const dateToUse = job.dueDate || job.createdAt;
+        return {
+          type: 'job' as const,
+          data: job,
+          date: dateToUse ? new Date(dateToUse) : new Date(),
+          sortKey: dateToUse ? new Date(dateToUse).getTime() : new Date().getTime()
+        };
+      }),
+      ...taskEvents.map(event => ({
+        type: 'event' as const,
+        data: event,
+        date: new Date(event.scheduledAt),
+        sortKey: new Date(event.scheduledAt).getTime()
+      })),
+      ...taskNotes.map(note => {
+        const createdAt = note.createdAt || new Date();
+        return {
+          type: 'note' as const,
+          data: note,
+          date: new Date(createdAt),
+          sortKey: new Date(createdAt).getTime()
+        };
+      })
+    ];
+
+    // Sort by date (earliest first)
+    return timelineItems.sort((a, b) => a.sortKey - b.sortKey);
+  };
+
   const calculateTaskProgress = (task: Task) => {
     const taskJobs = getTaskJobs(task.id);
     if (taskJobs.length === 0) return 0;
@@ -1141,79 +1178,256 @@ export default function Gantt() {
                                 </div>
                               )}
 
-                              {/* Events List */}
+                              {/* Unified Timeline */}
                               {(() => {
-                                const taskEvents = events.filter(event => event.taskId === task.id);
-                                return taskEvents.length > 0 && (
+                                const timeline = getTaskTimeline(task.id);
+                                
+                                return (
                                   <div className="space-y-2 mb-4">
-                                    <h5 className="text-sm font-medium text-gray-700">Scheduled Events</h5>
-                                    {taskEvents.map((event) => {
-                                      const contact = contacts.find(c => c.id === event.contactId);
-                                      const contractor = contractors.find(c => c.id === event.contractorId);
-                                      const assignedTo = contact || contractor;
-                                      const assigneeType = contact ? 'Contact' : contractor ? 'Contractor' : null;
-                                      
-                                      return (
-                                        <div key={event.id} className="flex items-center justify-between p-2 bg-purple-50 rounded border-l-4 border-purple-300">
-                                          <div className="flex items-center gap-3 flex-1">
-                                            <div className={cn(
-                                              "w-2 h-2 rounded-full",
-                                              event.status === 'completed' ? 'bg-green-500' :
-                                              event.status === 'cancelled' ? 'bg-red-500' :
-                                              'bg-blue-500'
-                                            )}></div>
-                                            <div className="flex-1">
-                                              <span className="text-sm font-medium">{event.title}</span>
-                                              <div className="text-xs text-gray-500">
-                                                {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
-                                                {assignedTo && (
-                                                  <span className="ml-2">
-                                                    with {assignedTo.name} ({assigneeType})
-                                                  </span>
-                                                )}
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium text-gray-700">Timeline</h5>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setNoteTaskId(task.id);
+                                            noteForm.setValue('taskId', task.id);
+                                            noteForm.setValue('propertyId', property.id);
+                                            setNewNoteOpen(true);
+                                          }}
+                                          className="h-6 px-2 text-xs"
+                                        >
+                                          <Plus className="h-3 w-3 mr-1" />
+                                          Add Note
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setSelectedTaskId(task.id);
+                                            setSelectedPropertyId(property.id);
+                                            setNewEventOpen(true);
+                                          }}
+                                          className="h-6 px-2 text-xs"
+                                        >
+                                          <Calendar className="h-3 w-3 mr-1" />
+                                          Schedule Event
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    {timeline.length > 0 ? (
+                                      timeline.map((item, index) => {
+                                        if (item.type === 'job') {
+                                          const job = item.data;
+                                          const assignedContractor = job.contractorId ? contractors.find(c => c.id === job.contractorId) : null;
+                                          
+                                          return (
+                                            <div key={`job-${job.id}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-l-4 border-l-gray-400">
+                                              <div className="flex items-center gap-3">
+                                                <div className="flex flex-col items-center">
+                                                  <div className={cn(
+                                                    "w-3 h-3 rounded-full",
+                                                    job.status === 'completed' ? 'bg-green-500' :
+                                                    job.status === 'in_progress' ? 'bg-blue-500' :
+                                                    'bg-gray-300'
+                                                  )}></div>
+                                                  <div className="text-xs text-gray-400 mt-1">JOB</div>
+                                                </div>
+                                                <div>
+                                                  <h4 className="font-medium">{job.name}</h4>
+                                                  {job.description && <p className="text-sm text-gray-600">{job.description}</p>}
+                                                  <div className="text-xs text-gray-500 mt-1">
+                                                    {job.dueDate ? 
+                                                      `Due: ${format(new Date(job.dueDate), "MMM d, yyyy")}` :
+                                                      `Created: ${format(new Date(job.createdAt), "MMM d, yyyy")}`
+                                                    }
+                                                  </div>
+                                                  {assignedContractor && (
+                                                    <p className="text-xs text-blue-600 mt-1">
+                                                      Assigned to: {assignedContractor.name} - {assignedContractor.specialty}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <Badge className={getStatusColor(job.status)}>
+                                                  {job.status.replace('_', ' ')}
+                                                </Badge>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => startEditJob(job)}
+                                                  className="h-6 w-6 p-0"
+                                                >
+                                                  <Edit2 className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    if (confirm(`Are you sure you want to delete the job "${job.name}"?`)) {
+                                                      deleteJobMutation.mutate(job.id);
+                                                    }
+                                                  }}
+                                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    const newStatus = job.status === 'completed' ? 'pending' : 
+                                                                   job.status === 'pending' ? 'in_progress' : 'completed';
+                                                    updateJobMutation.mutate({ id: job.id, status: newStatus });
+                                                  }}
+                                                  className={cn(
+                                                    "h-6 px-2 text-xs",
+                                                    job.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                                                    job.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                                                    'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                  )}
+                                                >
+                                                  {job.status === 'completed' ? 'Reopen' : 
+                                                   job.status === 'pending' ? 'Start' : 'Complete'}
+                                                </Button>
                                               </div>
                                             </div>
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                            <Badge className={cn(
-                                              "text-xs",
-                                              event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                              event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                              'bg-blue-100 text-blue-800'
-                                            )}>
-                                              {event.type}
-                                            </Badge>
-                                            <div className="flex gap-1">
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => {
-                                                  setEditingEvent(event);
-                                                  setSelectedTaskId(task.id);
-                                                  setSelectedPropertyId(property.id);
-                                                  setEditEventOpen(true);
-                                                }}
-                                                className="h-6 w-6 p-0"
-                                              >
-                                                <Edit2 className="h-3 w-3" />
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => {
-                                                  if (confirm(`Are you sure you want to delete the event "${event.title}"?`)) {
-                                                    deleteEventMutation.mutate(event.id);
-                                                  }
-                                                }}
-                                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                              >
-                                                <Trash2 className="h-3 w-3" />
-                                              </Button>
+                                          );
+                                        } else if (item.type === 'event') {
+                                          const event = item.data;
+                                          const contact = contacts.find(c => c.id === event.contactId);
+                                          const contractor = contractors.find(c => c.id === event.contractorId);
+                                          const assignedTo = contact || contractor;
+                                          const assigneeType = contact ? 'Contact' : contractor ? 'Contractor' : null;
+                                          
+                                          return (
+                                            <div key={`event-${event.id}`} className="flex items-center justify-between p-3 bg-purple-50 rounded border-l-4 border-purple-300">
+                                              <div className="flex items-center gap-3 flex-1">
+                                                <div className="flex flex-col items-center">
+                                                  <div className={cn(
+                                                    "w-3 h-3 rounded-full",
+                                                    event.status === 'completed' ? 'bg-green-500' :
+                                                    event.status === 'cancelled' ? 'bg-red-500' :
+                                                    'bg-blue-500'
+                                                  )}></div>
+                                                  <div className="text-xs text-gray-400 mt-1">EVENT</div>
+                                                </div>
+                                                <div className="flex-1">
+                                                  <span className="text-sm font-medium">{event.title}</span>
+                                                  <div className="text-xs text-gray-500">
+                                                    {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
+                                                    {assignedTo && (
+                                                      <span className="ml-2">
+                                                        with {assignedTo.name} ({assigneeType})
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <Badge className={cn(
+                                                  "text-xs",
+                                                  event.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                  event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                  'bg-blue-100 text-blue-800'
+                                                )}>
+                                                  {event.type}
+                                                </Badge>
+                                                <div className="flex gap-1">
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                      setEditingEvent(event);
+                                                      setSelectedTaskId(task.id);
+                                                      setSelectedPropertyId(property.id);
+                                                      setEditEventOpen(true);
+                                                    }}
+                                                    className="h-6 w-6 p-0"
+                                                  >
+                                                    <Edit2 className="h-3 w-3" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                      if (confirm(`Are you sure you want to delete the event "${event.title}"?`)) {
+                                                        deleteEventMutation.mutate(event.id);
+                                                      }
+                                                    }}
+                                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                                  >
+                                                    <Trash2 className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                              </div>
                                             </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
+                                          );
+                                        } else if (item.type === 'note') {
+                                          const note = item.data;
+                                          const assignedContractor = note.contractorId ? contractors.find(c => c.id === note.contractorId) : null;
+                                          
+                                          return (
+                                            <div key={`note-${note.id}`} className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-300">
+                                              <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-3 flex-1">
+                                                  <div className="flex flex-col items-center">
+                                                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                                    <div className="text-xs text-gray-400 mt-1">NOTE</div>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <p className="text-sm text-gray-800">{note.content}</p>
+                                                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                      <span>
+                                                        {format(new Date(note.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                                                      </span>
+                                                      {assignedContractor && (
+                                                        <span className="text-blue-600">
+                                                          • {assignedContractor.name}
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div className="flex gap-1 ml-2">
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                      setEditingNote(note);
+                                                      noteForm.setValue('content', note.content);
+                                                      noteForm.setValue('contractorId', note.contractorId || undefined);
+                                                      setEditNoteOpen(true);
+                                                    }}
+                                                    className="h-6 w-6 p-0"
+                                                  >
+                                                    <Edit2 className="h-3 w-3" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                      if (confirm('Are you sure you want to delete this note?')) {
+                                                        deleteNoteMutation.mutate(note.id);
+                                                      }
+                                                    }}
+                                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                                  >
+                                                    <Trash2 className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      })
+                                    ) : (
+                                      <p className="text-xs text-gray-400 italic">No timeline items yet</p>
+                                    )}
                                   </div>
                                 );
                               })()}
