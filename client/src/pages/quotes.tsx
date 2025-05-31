@@ -367,6 +367,14 @@ export default function Quotes() {
                                 {job.name}
                               </SelectItem>
                             ))}
+                            {quotableJobs.filter(job => {
+                              const propertyId = form.watch("propertyId");
+                              const taskId = form.watch("taskId");
+                              return (!propertyId || job.propertyId === propertyId) && 
+                                     (!taskId || job.taskId === taskId);
+                            }).length === 0 && (
+                              <div className="text-sm text-gray-500 p-2">No quotable jobs available for this task</div>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
