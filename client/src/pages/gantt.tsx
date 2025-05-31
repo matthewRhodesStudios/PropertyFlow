@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertTaskSchema, insertJobSchema, insertContactSchema, insertEventSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote, type Event } from "@shared/schema";
+import { insertTaskSchema, insertJobSchema, insertContactSchema, insertEventSchema, insertNoteSchema, type Task, type Job, type Property, type Contact, type Contractor, type Quote, type Event, type Note } from "@shared/schema";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export default function Gantt() {
@@ -40,6 +40,10 @@ export default function Gantt() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [dueDateType, setDueDateType] = useState<'absolute' | 'relative'>('absolute');
+  const [newNoteOpen, setNewNoteOpen] = useState(false);
+  const [editNoteOpen, setEditNoteOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [noteTaskId, setNoteTaskId] = useState<number | null>(null);
 
   // Queries
   const { data: properties = [] } = useQuery({
@@ -68,6 +72,10 @@ export default function Gantt() {
 
   const { data: events = [] } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+  });
+
+  const { data: notes = [] } = useQuery<Note[]>({
+    queryKey: ["/api/notes"],
   });
 
   // Mutations
@@ -176,6 +184,34 @@ export default function Gantt() {
     },
   });
 
+  const createNoteMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/notes", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      setNewNoteOpen(false);
+      noteForm.reset();
+    },
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      return apiRequest("PATCH", `/api/notes/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      setEditNoteOpen(false);
+      setEditingNote(null);
+      noteForm.reset();
+    },
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/notes/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+    },
+  });
+
   // Forms
   const taskForm = useForm({
     resolver: zodResolver(insertTaskSchema),
@@ -238,6 +274,16 @@ export default function Gantt() {
     },
   });
 
+  const noteForm = useForm({
+    resolver: zodResolver(insertNoteSchema),
+    defaultValues: {
+      propertyId: 1,
+      taskId: undefined,
+      content: "",
+      contractorId: undefined,
+    },
+  });
+
   // Helper functions
   const toggleTask = (taskId: number) => {
     setExpandedTasks(prev => ({
@@ -252,6 +298,10 @@ export default function Gantt() {
 
   const getTaskQuotes = (taskId: number) => {
     return quotes.filter(quote => quote.taskId === taskId);
+  };
+
+  const getTaskNotes = (taskId: number) => {
+    return notes.filter(note => note.taskId === taskId);
   };
 
   const calculateTaskProgress = (task: Task) => {

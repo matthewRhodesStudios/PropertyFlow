@@ -617,6 +617,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats endpoint
+  // Notes routes
+  app.get("/api/notes", async (_req, res) => {
+    try {
+      const notes = await storage.getNotes();
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notes" });
+    }
+  });
+
+  app.get("/api/notes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const note = await storage.getNote(id);
+      if (!note) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch note" });
+    }
+  });
+
+  app.get("/api/properties/:propertyId/notes", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      const notes = await storage.getNotesByProperty(propertyId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notes for property" });
+    }
+  });
+
+  app.get("/api/tasks/:taskId/notes", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const notes = await storage.getNotesByTask(taskId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notes for task" });
+    }
+  });
+
+  app.post("/api/notes", async (req, res) => {
+    try {
+      const validatedData = insertNoteSchema.parse(req.body);
+      const note = await storage.createNote(validatedData);
+      res.json(note);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid note data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create note" });
+    }
+  });
+
+  app.patch("/api/notes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertNoteSchema.partial().parse(req.body);
+      const note = await storage.updateNote(id, validatedData);
+      if (!note) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      res.json(note);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid note data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update note" });
+    }
+  });
+
+  app.delete("/api/notes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteNote(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      res.json({ message: "Note deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+
   app.get("/api/dashboard/stats", async (_req, res) => {
     try {
       const properties = await storage.getProperties();
