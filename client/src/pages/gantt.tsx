@@ -237,6 +237,7 @@ export default function Gantt() {
       name: "",
       description: "",
       status: "pending",
+      quotable: false,
       dueDate: undefined,
       contractorId: undefined,
       contactId: undefined,
@@ -2002,6 +2003,29 @@ export default function Gantt() {
 
               <FormField
                 control={jobForm.control}
+                name="quotable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Quotable Job
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Mark this job as quotable to allow contractors to provide quotes for it.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={jobForm.control}
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -2214,6 +2238,29 @@ export default function Gantt() {
                       <Textarea {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={jobForm.control}
+                name="quotable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Quotable Job
+                      </FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Mark this job as quotable to allow contractors to provide quotes for it.
+                      </p>
+                    </div>
                   </FormItem>
                 )}
               />

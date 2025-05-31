@@ -85,6 +85,7 @@ export const jobs = pgTable("jobs", {
   description: text("description"),
   type: text("type").notNull().default("general"), // contractor_work, phone_call, email, meeting, document_review
   status: text("status").notNull().default("pending"), // pending, in_progress, completed
+  quotable: boolean("quotable").notNull().default(false),
   dueDate: timestamp("due_date"),
   contractorId: integer("contractor_id"), // for contractor_work type
   contactId: integer("contact_id"), // for calls, emails, meetings
