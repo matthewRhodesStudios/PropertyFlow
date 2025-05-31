@@ -313,68 +313,50 @@ export default function Quotes() {
                     name="taskId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Task Category</FormLabel>
+                        <FormLabel>Quotable Item</FormLabel>
                         <Select onValueChange={(value) => {
-                          field.onChange(parseInt(value));
-                          form.setValue("jobId", undefined);
-                        }} value={field.value?.toString()}>
+                          if (value.startsWith('task-')) {
+                            const taskId = parseInt(value.replace('task-', ''));
+                            field.onChange(taskId);
+                            form.setValue("jobId", undefined);
+                          } else if (value.startsWith('job-')) {
+                            const jobId = parseInt(value.replace('job-', ''));
+                            const job = quotableJobs.find(j => j.id === jobId);
+                            if (job) {
+                              field.onChange(job.taskId);
+                              form.setValue("jobId", jobId);
+                            }
+                          }
+                        }} value={
+                          form.watch("jobId") ? `job-${form.watch("jobId")}` : 
+                          field.value ? `task-${field.value}` : undefined
+                        }>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select quotable task" />
+                              <SelectValue placeholder="Select quotable task or job" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            {/* Show quotable tasks */}
                             {quotableTasks
                               .filter(task => !form.watch("propertyId") || task.propertyId === form.watch("propertyId"))
                               .map((task) => (
-                              <SelectItem key={task.id} value={task.id.toString()}>
-                                {task.title}
+                              <SelectItem key={`task-${task.id}`} value={`task-${task.id}`}>
+                                📋 {task.title}
                               </SelectItem>
                             ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="jobId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Job (Optional)</FormLabel>
-                        <Select 
-                          onValueChange={(value) => field.onChange(parseInt(value))} 
-                          value={field.value?.toString()}
-                          disabled={!form.watch("taskId")}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select quotable job" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
+                            
+                            {/* Show quotable jobs */}
                             {quotableJobs
-                              .filter(job => {
-                                const propertyId = form.watch("propertyId");
-                                const taskId = form.watch("taskId");
-                                return (!propertyId || job.propertyId === propertyId) && 
-                                       (!taskId || job.taskId === taskId);
-                              })
-                              .map((job) => (
-                              <SelectItem key={job.id} value={job.id.toString()}>
-                                {job.name}
-                              </SelectItem>
-                            ))}
-                            {quotableJobs.filter(job => {
-                              const propertyId = form.watch("propertyId");
-                              const taskId = form.watch("taskId");
-                              return (!propertyId || job.propertyId === propertyId) && 
-                                     (!taskId || job.taskId === taskId);
-                            }).length === 0 && (
-                              <div className="text-sm text-gray-500 p-2">No quotable jobs available for this task</div>
-                            )}
+                              .filter(job => !form.watch("propertyId") || job.propertyId === form.watch("propertyId"))
+                              .map((job) => {
+                                const task = tasks.find(t => t.id === job.taskId);
+                                return (
+                                  <SelectItem key={`job-${job.id}`} value={`job-${job.id}`}>
+                                    🔧 {job.name} ({task?.title})
+                                  </SelectItem>
+                                );
+                              })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
