@@ -298,7 +298,11 @@ export default function Gantt() {
   };
 
   const getTaskQuotes = (taskId: number) => {
-    return quotes.filter(quote => quote.taskId === taskId);
+    return quotes.filter(quote => quote.taskId === taskId && !quote.jobId);
+  };
+
+  const getJobQuotes = (jobId: number) => {
+    return quotes.filter(quote => quote.jobId === jobId);
   };
 
   const getTaskNotes = (taskId: number) => {
@@ -1211,78 +1215,118 @@ export default function Gantt() {
                                         if (item.type === 'job') {
                                           const job = item.data;
                                           const assignedContractor = job.contractorId ? contractors.find(c => c.id === job.contractorId) : null;
+                                          const jobQuotes = getJobQuotes(job.id);
                                           
                                           return (
-                                            <div key={`job-${job.id}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-l-4 border-l-gray-400">
-                                              <div className="flex items-center gap-3">
-                                                <div className="flex flex-col items-center">
-                                                  <div className={cn(
-                                                    "w-3 h-3 rounded-full",
-                                                    job.status === 'completed' ? 'bg-green-500' :
-                                                    job.status === 'in_progress' ? 'bg-blue-500' :
-                                                    'bg-gray-300'
-                                                  )}></div>
-                                                  <div className="text-xs text-gray-400 mt-1">JOB</div>
-                                                </div>
-                                                <div>
-                                                  <h4 className="font-medium">{job.name}</h4>
-                                                  {job.description && <p className="text-sm text-gray-600">{job.description}</p>}
-                                                  <div className="text-xs text-gray-500 mt-1">
-                                                    {job.dueDate ? 
-                                                      `Due: ${format(new Date(job.dueDate), "MMM d, yyyy")}` :
-                                                      `Created: ${format(new Date(job.createdAt), "MMM d, yyyy")}`
-                                                    }
+                                            <div key={`job-${job.id}`} className="space-y-2">
+                                              {/* Job Item */}
+                                              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-l-4 border-l-gray-400">
+                                                <div className="flex items-center gap-3">
+                                                  <div className="flex flex-col items-center">
+                                                    <div className={cn(
+                                                      "w-3 h-3 rounded-full",
+                                                      job.status === 'completed' ? 'bg-green-500' :
+                                                      job.status === 'in_progress' ? 'bg-blue-500' :
+                                                      'bg-gray-300'
+                                                    )}></div>
+                                                    <div className="text-xs text-gray-400 mt-1">JOB</div>
                                                   </div>
-                                                  {assignedContractor && (
-                                                    <p className="text-xs text-blue-600 mt-1">
-                                                      Assigned to: {assignedContractor.name} - {assignedContractor.specialty}
-                                                    </p>
-                                                  )}
+                                                  <div>
+                                                    <h4 className="font-medium">{job.name}</h4>
+                                                    {job.description && <p className="text-sm text-gray-600">{job.description}</p>}
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                      {job.dueDate ? 
+                                                        `Due: ${format(new Date(job.dueDate), "MMM d, yyyy")}` :
+                                                        `Created: ${format(new Date(job.createdAt), "MMM d, yyyy")}`
+                                                      }
+                                                    </div>
+                                                    {assignedContractor && (
+                                                      <p className="text-xs text-blue-600 mt-1">
+                                                        Assigned to: {assignedContractor.name} - {assignedContractor.specialty}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <Badge className={getStatusColor(job.status)}>
+                                                    {job.status.replace('_', ' ')}
+                                                  </Badge>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => startEditJob(job)}
+                                                    className="h-6 w-6 p-0"
+                                                  >
+                                                    <Edit2 className="h-3 w-3" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                      if (confirm(`Are you sure you want to delete the job "${job.name}"?`)) {
+                                                        deleteJobMutation.mutate(job.id);
+                                                      }
+                                                    }}
+                                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                  >
+                                                    <Trash2 className="h-3 w-3" />
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                      const newStatus = job.status === 'completed' ? 'pending' : 
+                                                                     job.status === 'pending' ? 'in_progress' : 'completed';
+                                                      updateJobMutation.mutate({ id: job.id, status: newStatus });
+                                                    }}
+                                                    className={cn(
+                                                      "h-6 px-2 text-xs",
+                                                      job.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                                                      job.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                                                      'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    )}
+                                                  >
+                                                    {job.status === 'completed' ? 'Reopen' : 
+                                                     job.status === 'pending' ? 'Start' : 'Complete'}
+                                                  </Button>
                                                 </div>
                                               </div>
-                                              <div className="flex items-center gap-2">
-                                                <Badge className={getStatusColor(job.status)}>
-                                                  {job.status.replace('_', ' ')}
-                                                </Badge>
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => startEditJob(job)}
-                                                  className="h-6 w-6 p-0"
-                                                >
-                                                  <Edit2 className="h-3 w-3" />
-                                                </Button>
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => {
-                                                    if (confirm(`Are you sure you want to delete the job "${job.name}"?`)) {
-                                                      deleteJobMutation.mutate(job.id);
-                                                    }
-                                                  }}
-                                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                >
-                                                  <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => {
-                                                    const newStatus = job.status === 'completed' ? 'pending' : 
-                                                                   job.status === 'pending' ? 'in_progress' : 'completed';
-                                                    updateJobMutation.mutate({ id: job.id, status: newStatus });
-                                                  }}
-                                                  className={cn(
-                                                    "h-6 px-2 text-xs",
-                                                    job.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                                                    job.status === 'in_progress' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                                                    'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                  )}
-                                                >
-                                                  {job.status === 'completed' ? 'Reopen' : 
-                                                   job.status === 'pending' ? 'Start' : 'Complete'}
-                                                </Button>
-                                              </div>
+                                              
+                                              {/* Job Quotes displayed below the job */}
+                                              {jobQuotes.length > 0 && (
+                                                <div className="ml-6 space-y-1">
+                                                  <div className="text-xs font-medium text-blue-600 mb-2">
+                                                    {jobQuotes.length} quote{jobQuotes.length !== 1 ? 's' : ''} for this job:
+                                                  </div>
+                                                  {jobQuotes.map((quote) => {
+                                                    const contractor = contractors.find(c => c.id === quote.contractorId);
+                                                    return (
+                                                      <div key={quote.id} className="flex items-center justify-between p-2 bg-blue-50 rounded border-l-2 border-blue-300">
+                                                        <div className="flex items-center gap-2">
+                                                          <div className={cn(
+                                                            "w-2 h-2 rounded-full",
+                                                            quote.status === 'accepted' ? 'bg-green-500' :
+                                                            quote.status === 'rejected' ? 'bg-red-500' :
+                                                            'bg-yellow-500'
+                                                          )}></div>
+                                                          <div>
+                                                            <span className="text-xs font-medium">{contractor?.name || 'Unknown Contractor'}</span>
+                                                            <span className="text-xs text-gray-500 ml-2">{formatCurrency(quote.amount)}</span>
+                                                          </div>
+                                                        </div>
+                                                        <Badge className={cn(
+                                                          "text-xs px-1 py-0",
+                                                          quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                                          quote.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                          'bg-yellow-100 text-yellow-800'
+                                                        )}>
+                                                          {quote.status}
+                                                        </Badge>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              )}
                                             </div>
                                           );
                                         } else if (item.type === 'event') {
