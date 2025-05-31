@@ -1,7 +1,7 @@
-import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact, Expense, InsertExpense, DocumentAssignment, InsertDocumentAssignment, Event, InsertEvent } from "@shared/schema";
+import type { Property, InsertProperty, Contractor, InsertContractor, Quote, InsertQuote, Job, InsertJob, Task, InsertTask, Document, InsertDocument, Contact, InsertContact, Expense, InsertExpense, DocumentAssignment, InsertDocumentAssignment, Event, InsertEvent, Note, InsertNote } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { properties, contractors, quotes, jobs, tasks, documents, contacts, expenses, documentAssignments, events } from "@shared/schema";
+import { properties, contractors, quotes, jobs, tasks, documents, contacts, expenses, documentAssignments, events, notes } from "@shared/schema";
 
 export interface IStorage {
   // Properties
@@ -420,6 +420,39 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEvent(id: number): Promise<boolean> {
     const result = await db.delete(events).where(eq(events.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Notes implementation
+  async getNotes(): Promise<Note[]> {
+    return await db.select().from(notes).orderBy(desc(notes.createdAt));
+  }
+
+  async getNotesByProperty(propertyId: number): Promise<Note[]> {
+    return await db.select().from(notes).where(eq(notes.propertyId, propertyId)).orderBy(desc(notes.createdAt));
+  }
+
+  async getNotesByTask(taskId: number): Promise<Note[]> {
+    return await db.select().from(notes).where(eq(notes.taskId, taskId)).orderBy(desc(notes.createdAt));
+  }
+
+  async getNote(id: number): Promise<Note | undefined> {
+    const [note] = await db.select().from(notes).where(eq(notes.id, id));
+    return note || undefined;
+  }
+
+  async createNote(note: InsertNote): Promise<Note> {
+    const [newNote] = await db.insert(notes).values(note).returning();
+    return newNote;
+  }
+
+  async updateNote(id: number, note: Partial<InsertNote>): Promise<Note | undefined> {
+    const [updatedNote] = await db.update(notes).set(note).where(eq(notes.id, id)).returning();
+    return updatedNote || undefined;
+  }
+
+  async deleteNote(id: number): Promise<boolean> {
+    const result = await db.delete(notes).where(eq(notes.id, id));
     return result.rowCount > 0;
   }
 }
