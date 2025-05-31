@@ -467,7 +467,7 @@ export default function Gantt() {
       name: job.name,
       description: job.description || "",
       status: job.status,
-      dueDate: job.dueDate || undefined,
+      dueDate: job.dueDate ? format(new Date(job.dueDate), "yyyy-MM-dd") : "",
       contractorId: job.contractorId || undefined,
       contactId: job.contactId || undefined,
     });
