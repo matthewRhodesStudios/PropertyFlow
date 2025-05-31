@@ -88,6 +88,13 @@ export interface IStorage {
   createNote(note: InsertNote): Promise<Note>;
   updateNote(id: number, note: Partial<InsertNote>): Promise<Note | undefined>;
   deleteNote(id: number): Promise<boolean>;
+
+  // Property Valuations
+  getPropertyValuations(propertyId: number): Promise<PropertyValuation[]>;
+  getLatestValuation(propertyId: number): Promise<PropertyValuation | undefined>;
+  createPropertyValuation(valuation: InsertPropertyValuation): Promise<PropertyValuation>;
+  updatePropertyValuation(id: number, valuation: Partial<InsertPropertyValuation>): Promise<PropertyValuation | undefined>;
+  deletePropertyValuation(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {

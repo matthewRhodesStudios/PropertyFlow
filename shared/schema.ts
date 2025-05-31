@@ -276,3 +276,19 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 
 export type Note = typeof notes.$inferSelect;
 export type InsertNote = z.infer<typeof insertNoteSchema>;
+
+// Property Valuations table
+export const propertyValuations = pgTable('property_valuations', {
+  id: serial('id').primaryKey(),
+  propertyId: integer('property_id').references(() => properties.id).notNull(),
+  estimatedValue: integer('estimated_value').notNull(), // in pence
+  confidence: text('confidence'), // high, medium, low
+  source: text('source').notNull(), // API provider name
+  dateGenerated: timestamp('date_generated').defaultNow(),
+  additionalData: text('additional_data'), // JSON string for extra data
+  automaticUpdate: boolean('automatic_update').default(true),
+});
+
+export const insertPropertyValuationSchema = createInsertSchema(propertyValuations).omit({ id: true, dateGenerated: true });
+export type InsertPropertyValuation = z.infer<typeof insertPropertyValuationSchema>;
+export type PropertyValuation = typeof propertyValuations.$inferSelect;
