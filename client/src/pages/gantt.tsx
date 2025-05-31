@@ -2019,18 +2019,13 @@ export default function Gantt() {
 
             <div>
               <label className="text-sm font-medium">Event Type</label>
-              <Select name="type" defaultValue="survey">
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select event type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="survey">Survey</SelectItem>
-                  <SelectItem value="viewing">Viewing</SelectItem>
-                  <SelectItem value="meeting">Meeting</SelectItem>
-                  <SelectItem value="appointment">Appointment</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                </SelectContent>
-              </Select>
+              <select name="type" defaultValue="survey" className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="survey">Survey</option>
+                <option value="viewing">Viewing</option>
+                <option value="meeting">Meeting</option>
+                <option value="appointment">Appointment</option>
+                <option value="inspection">Inspection</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -2067,19 +2062,14 @@ export default function Gantt() {
 
             <div>
               <label className="text-sm font-medium">Contact (optional)</label>
-              <Select name="contactId">
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select contact" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No contact</SelectItem>
-                  {contacts.map((contact) => (
-                    <SelectItem key={contact.id} value={contact.id.toString()}>
-                      {contact.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select name="contactId" defaultValue="none" className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="none">No contact</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.id.toString()}>
+                    {contact.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -2097,33 +2087,35 @@ export default function Gantt() {
               </Button>
               <Button 
                 onClick={(e) => {
-                  const form = e.currentTarget.closest('div')?.parentElement as HTMLFormElement;
-                  if (form) {
-                    const formData = new FormData();
-                    const inputs = form.querySelectorAll('input, select, textarea');
-                    inputs.forEach((input: any) => {
-                      if (input.name && input.value) {
-                        formData.append(input.name, input.value);
-                      }
-                    });
+                  const container = e.currentTarget.closest('.space-y-4') as HTMLElement;
+                  if (container) {
+                    const titleInput = container.querySelector('[name="title"]') as HTMLInputElement;
+                    const typeSelect = container.querySelector('[name="type"]') as HTMLSelectElement;
+                    const scheduledAtInput = container.querySelector('[name="scheduledAt"]') as HTMLInputElement;
+                    const durationInput = container.querySelector('[name="duration"]') as HTMLInputElement;
+                    const locationInput = container.querySelector('[name="location"]') as HTMLInputElement;
+                    const contactSelect = container.querySelector('[name="contactId"]') as HTMLSelectElement;
+                    const notesTextarea = container.querySelector('[name="notes"]') as HTMLTextAreaElement;
                     
-                    const scheduledAt = new Date((form.querySelector('[name="scheduledAt"]') as HTMLInputElement).value);
-                    const duration = parseInt((form.querySelector('[name="duration"]') as HTMLInputElement).value) || 60;
-                    const contactValue = (form.querySelector('[name="contactId"]') as HTMLSelectElement).value;
-                    
-                    createEventMutation.mutate({
-                      title: (form.querySelector('[name="title"]') as HTMLInputElement).value,
-                      description: '',
-                      type: (form.querySelector('[name="type"]') as HTMLSelectElement).value,
-                      scheduledAt: scheduledAt,
-                      duration: duration,
-                      location: (form.querySelector('[name="location"]') as HTMLInputElement).value || '',
-                      status: 'scheduled',
-                      notes: (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value || '',
-                      propertyId: selectedPropertyId!,
-                      taskId: selectedTaskId!,
-                      contactId: contactValue && contactValue !== 'none' ? parseInt(contactValue) : undefined,
-                    });
+                    if (titleInput && typeSelect && scheduledAtInput) {
+                      const scheduledAt = new Date(scheduledAtInput.value);
+                      const duration = parseInt(durationInput?.value || '60') || 60;
+                      const contactValue = contactSelect?.value;
+                      
+                      createEventMutation.mutate({
+                        title: titleInput.value,
+                        description: '',
+                        type: typeSelect.value,
+                        scheduledAt: scheduledAt,
+                        duration: duration,
+                        location: locationInput?.value || '',
+                        status: 'scheduled',
+                        notes: notesTextarea?.value || '',
+                        propertyId: selectedPropertyId!,
+                        taskId: selectedTaskId!,
+                        contactId: contactValue && contactValue !== 'none' ? parseInt(contactValue) : undefined,
+                      });
+                    }
                   }
                 }}
                 disabled={createEventMutation.isPending}
