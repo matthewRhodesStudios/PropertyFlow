@@ -161,6 +161,13 @@ export default function Gantt() {
     },
   });
 
+  const deleteJobMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/jobs/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+    },
+  });
+
   const deleteTaskMutation = useMutation({
     mutationFn: (id: number) => apiRequest("DELETE", `/api/tasks/${id}`),
     onSuccess: () => {
@@ -1161,51 +1168,76 @@ export default function Gantt() {
 
                               {/* Job List */}
                               <div className="space-y-2">
-                                {taskJobs.map((job) => (
-                                  <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                                    <div className="flex items-center gap-3">
-                                      <div className={cn(
-                                        "w-3 h-3 rounded-full",
-                                        job.status === 'completed' ? 'bg-green-500' :
-                                        job.status === 'in_progress' ? 'bg-blue-500' :
-                                        'bg-gray-300'
-                                      )}></div>
-                                      <div>
-                                        <h4 className="font-medium">{job.name}</h4>
-                                        {job.description && <p className="text-sm text-gray-600">{job.description}</p>}
+                                {taskJobs.map((job) => {
+                                  const assignedContractor = job.contractorId ? contractors.find(c => c.id === job.contractorId) : null;
+                                  
+                                  return (
+                                    <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                      <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                          "w-3 h-3 rounded-full",
+                                          job.status === 'completed' ? 'bg-green-500' :
+                                          job.status === 'in_progress' ? 'bg-blue-500' :
+                                          'bg-gray-300'
+                                        )}></div>
+                                        <div>
+                                          <h4 className="font-medium">{job.name}</h4>
+                                          {job.description && <p className="text-sm text-gray-600">{job.description}</p>}
+                                          {assignedContractor && (
+                                            <p className="text-xs text-blue-600 mt-1">
+                                              Assigned to: {assignedContractor.name} - {assignedContractor.specialty}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge className={getStatusColor(job.status)}>
+                                          {job.status.replace('_', ' ')}
+                                        </Badge>
+                                        {job.dueDate && (
+                                          <span className="text-xs text-gray-500">
+                                            Due {format(new Date(job.dueDate), 'MMM d')}
+                                          </span>
+                                        )}
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setEditingJob(job);
+                                            setEditJobOpen(true);
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                        >
+                                          <Edit2 className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            if (confirm(`Are you sure you want to delete the job "${job.name}"?`)) {
+                                              deleteJobMutation.mutate(job.id);
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            const newStatus = job.status === 'completed' ? 'pending' : 
+                                                           job.status === 'pending' ? 'in_progress' : 'completed';
+                                            updateJobMutation.mutate({ id: job.id, status: newStatus });
+                                          }}
+                                        >
+                                          {job.status === 'completed' ? 'Reopen' : 
+                                           job.status === 'pending' ? 'Start' : 'Complete'}
+                                        </Button>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <Badge className={getStatusColor(job.status)}>
-                                        {job.status.replace('_', ' ')}
-                                      </Badge>
-                                      {job.dueDate && (
-                                        <span className="text-xs text-gray-500">
-                                          Due {format(new Date(job.dueDate), 'MMM d')}
-                                        </span>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => startEditJob(job)}
-                                      >
-                                        <Edit2 className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          const newStatus = job.status === 'completed' ? 'pending' : 
-                                                         job.status === 'pending' ? 'in_progress' : 'completed';
-                                          updateJobMutation.mutate({ id: job.id, status: newStatus });
-                                        }}
-                                      >
-                                        {job.status === 'completed' ? 'Reopen' : 
-                                         job.status === 'pending' ? 'Start' : 'Complete'}
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                                 
                                 {taskJobs.length === 0 && (
                                   <p className="text-gray-500 text-center py-4">No jobs added yet</p>
@@ -1949,7 +1981,7 @@ export default function Gantt() {
               if (editingJob) {
                 const jobData = {
                   ...data,
-                  type: "general", // Set default type since it's required by schema
+                  type: "general",
                 };
                 updateJobMutation.mutate({ id: editingJob.id, ...jobData });
                 setEditJobOpen(false);
@@ -1971,23 +2003,6 @@ export default function Gantt() {
                   )}
                 />
                 
-              </div>
-
-              <FormField
-                control={jobForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Job description..." {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={jobForm.control}
                   name="status"
@@ -2010,6 +2025,48 @@ export default function Gantt() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <FormField
+                control={jobForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={jobForm.control}
+                  name="contractorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign to Contractor</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select contractor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No assignment</SelectItem>
+                          {contractors.map((contractor) => (
+                            <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                              {contractor.name} - {contractor.specialty}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={jobForm.control}
@@ -2025,8 +2082,6 @@ export default function Gantt() {
                   )}
                 />
               </div>
-
-
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setEditJobOpen(false)}>
