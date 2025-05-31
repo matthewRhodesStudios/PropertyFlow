@@ -1083,6 +1083,9 @@ export default function Gantt() {
                                     {taskEvents.map((event) => {
                                       const contact = contacts.find(c => c.id === event.contactId);
                                       const contractor = contractors.find(c => c.id === event.contractorId);
+                                      const assignedTo = contact || contractor;
+                                      const assigneeType = contact ? 'Contact' : contractor ? 'Contractor' : null;
+                                      
                                       return (
                                         <div key={event.id} className="flex items-center justify-between p-2 bg-purple-50 rounded border-l-4 border-purple-300">
                                           <div className="flex items-center gap-3">
@@ -1096,9 +1099,9 @@ export default function Gantt() {
                                               <span className="text-sm font-medium">{event.title}</span>
                                               <div className="text-xs text-gray-500">
                                                 {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
-                                                {(contact || contractor) && (
+                                                {assignedTo && (
                                                   <span className="ml-2">
-                                                    with {contact?.name || contractor?.name}
+                                                    with {assignedTo.name} ({assigneeType})
                                                   </span>
                                                 )}
                                               </div>
@@ -2061,14 +2064,23 @@ export default function Gantt() {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Contact (optional)</label>
-              <select name="contactId" defaultValue="none" className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-                <option value="none">No contact</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id.toString()}>
-                    {contact.name}
-                  </option>
-                ))}
+              <label className="text-sm font-medium">Assign to (optional)</label>
+              <select name="assigneeId" defaultValue="none" className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <option value="none">No assignment</option>
+                <optgroup label="Contacts">
+                  {contacts.map((contact) => (
+                    <option key={`contact-${contact.id}`} value={`contact-${contact.id}`}>
+                      {contact.name} ({contact.role})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Contractors">
+                  {contractors.map((contractor) => (
+                    <option key={`contractor-${contractor.id}`} value={`contractor-${contractor.id}`}>
+                      {contractor.name} - {contractor.specialty}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
@@ -2094,13 +2106,25 @@ export default function Gantt() {
                     const scheduledAtInput = container.querySelector('[name="scheduledAt"]') as HTMLInputElement;
                     const durationInput = container.querySelector('[name="duration"]') as HTMLInputElement;
                     const locationInput = container.querySelector('[name="location"]') as HTMLInputElement;
-                    const contactSelect = container.querySelector('[name="contactId"]') as HTMLSelectElement;
+                    const assigneeSelect = container.querySelector('[name="assigneeId"]') as HTMLSelectElement;
                     const notesTextarea = container.querySelector('[name="notes"]') as HTMLTextAreaElement;
                     
                     if (titleInput && typeSelect && scheduledAtInput) {
                       const scheduledAt = new Date(scheduledAtInput.value);
                       const duration = parseInt(durationInput?.value || '60') || 60;
-                      const contactValue = contactSelect?.value;
+                      const assigneeValue = assigneeSelect?.value;
+                      
+                      // Parse assignee value to determine if it's a contact or contractor
+                      let contactId = undefined;
+                      let contractorId = undefined;
+                      
+                      if (assigneeValue && assigneeValue !== 'none') {
+                        if (assigneeValue.startsWith('contact-')) {
+                          contactId = parseInt(assigneeValue.replace('contact-', ''));
+                        } else if (assigneeValue.startsWith('contractor-')) {
+                          contractorId = parseInt(assigneeValue.replace('contractor-', ''));
+                        }
+                      }
                       
                       createEventMutation.mutate({
                         title: titleInput.value,
@@ -2113,7 +2137,8 @@ export default function Gantt() {
                         notes: notesTextarea?.value || '',
                         propertyId: selectedPropertyId!,
                         taskId: selectedTaskId!,
-                        contactId: contactValue && contactValue !== 'none' ? parseInt(contactValue) : undefined,
+                        contactId: contactId,
+                        contractorId: contractorId,
                       });
                     }
                   }
