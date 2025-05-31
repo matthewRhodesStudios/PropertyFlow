@@ -1218,6 +1218,85 @@ export default function Gantt() {
                                 );
                               })()}
 
+                              {/* Notes List */}
+                              {(() => {
+                                const taskNotes = getTaskNotes(task.id);
+                                return (
+                                  <div className="space-y-2 mb-4">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium text-gray-700">Notes</h5>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setNoteTaskId(task.id);
+                                          noteForm.setValue('taskId', task.id);
+                                          noteForm.setValue('propertyId', property.id);
+                                          setNewNoteOpen(true);
+                                        }}
+                                        className="h-6 px-2 text-xs"
+                                      >
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Note
+                                      </Button>
+                                    </div>
+                                    {taskNotes.length > 0 ? (
+                                      taskNotes.map((note) => {
+                                        const assignedContractor = note.contractorId ? contractors.find(c => c.id === note.contractorId) : null;
+                                        return (
+                                          <div key={note.id} className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-300">
+                                            <div className="flex items-start justify-between">
+                                              <div className="flex-1">
+                                                <p className="text-sm text-gray-800">{note.content}</p>
+                                                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                  <span>
+                                                    {format(new Date(note.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                                                  </span>
+                                                  {assignedContractor && (
+                                                    <span className="text-blue-600">
+                                                      • {assignedContractor.name}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-1 ml-2">
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => {
+                                                    setEditingNote(note);
+                                                    noteForm.setValue('content', note.content);
+                                                    noteForm.setValue('contractorId', note.contractorId || undefined);
+                                                    setEditNoteOpen(true);
+                                                  }}
+                                                  className="h-6 w-6 p-0"
+                                                >
+                                                  <Edit2 className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={() => {
+                                                    if (confirm('Are you sure you want to delete this note?')) {
+                                                      deleteNoteMutation.mutate(note.id);
+                                                    }
+                                                  }}
+                                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <p className="text-xs text-gray-400 italic">No notes yet</p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
                               {/* Job List */}
                               <div className="space-y-2">
                                 {taskJobs.map((job) => {
@@ -2456,6 +2535,140 @@ export default function Gantt() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Creation Dialog */}
+      <Dialog open={newNoteOpen} onOpenChange={setNewNoteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Note</DialogTitle>
+          </DialogHeader>
+          <Form {...noteForm}>
+            <form onSubmit={noteForm.handleSubmit((data) => createNoteMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={noteForm.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note Content</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter your note..." 
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={noteForm.control}
+                name="contractorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Contractor (Optional)</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contractor (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No contractor</SelectItem>
+                        {contractors.map((contractor) => (
+                          <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                            {contractor.name} - {contractor.specialty}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setNewNoteOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createNoteMutation.isPending}>
+                  Add Note
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Editing Dialog */}
+      <Dialog open={editNoteOpen} onOpenChange={setEditNoteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+          </DialogHeader>
+          <Form {...noteForm}>
+            <form onSubmit={noteForm.handleSubmit((data) => {
+              if (editingNote) {
+                updateNoteMutation.mutate({ id: editingNote.id, data });
+              }
+            })} className="space-y-4">
+              <FormField
+                control={noteForm.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note Content</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter your note..." 
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={noteForm.control}
+                name="contractorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Contractor (Optional)</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))} value={field.value?.toString() || "none"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select contractor (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No contractor</SelectItem>
+                        {contractors.map((contractor) => (
+                          <SelectItem key={contractor.id} value={contractor.id.toString()}>
+                            {contractor.name} - {contractor.specialty}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditNoteOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateNoteMutation.isPending}>
+                  Update Note
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
