@@ -14,6 +14,8 @@ import Gantt from "@/pages/gantt";
 import Expenses from "@/pages/expenses";
 import Sidebar from "@/components/layout/sidebar";
 import TopBar from "@/components/layout/topbar";
+import calendar from "@/pages/calendar";
+import { Calendar } from "lucide-react";
 
 function Router() {
   return (
@@ -31,6 +33,7 @@ function Router() {
             <Route path="/gantt" component={Gantt} />
             <Route path="/expenses" component={Expenses} />
             <Route path="/reports" component={Reports} />
+            <Route path="/calendar" component={calendar} />
             <Route component={NotFound} />
           </Switch>
         </main>

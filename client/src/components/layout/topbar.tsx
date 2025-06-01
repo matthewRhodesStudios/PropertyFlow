@@ -8,7 +8,10 @@ const pageNames: Record<string, string> = {
   "/documents": "Documents",
   "/quotes": "Quotes",
   "/gantt": "Timeline",
-  "/reports": "Reports"
+  "/reports": "Reports",
+  "/expenses": "Expenses",
+  "/calendar": "Calendar",
+  // Add more mappings as needed
 };
 
 export default function TopBar() {
@@ -80,6 +83,7 @@ function MobileNavItems({ onItemClick }: { onItemClick: () => void }) {
     { name: "Timeline", href: "/gantt", icon: "timeline" },
     { name: "Expenses", href: "/expenses", icon: "receipt" },
     { name: "Reports", href: "/reports", icon: "assessment" },
+    { name: "Calendar", href: "/calendar", icon: "calendar" },
   ];
 
   const isActive = (href: string) => {

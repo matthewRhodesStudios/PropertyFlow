@@ -12,12 +12,13 @@ export default function Sidebar() {
     { name: "Timeline", href: "/gantt", icon: "timeline" },
     { name: "Expenses", href: "/expenses", icon: "receipt" },
     { name: "Reports", href: "/reports", icon: "assessment" },
+    { name: "Calendar", href: "/calendar", icon: "calendar" },
   ];
 
-  const isActive = (href: string) => {
+  function isActive(href: string) {
     if (href === "/") return location === "/";
     return location.startsWith(href);
-  };
+  }
 
   return (
     <div className="hidden lg:flex lg:flex-shrink-0 lg:w-72 bg-white shadow-lg">
