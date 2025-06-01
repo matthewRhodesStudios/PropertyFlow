@@ -146,10 +146,11 @@ export default function Quotes() {
   };
 
   const getQuoteStatusCounts = (quotes: Quote[]) => {
-    const counts = { pending: 0, accepted: 0, rejected: 0 };
+    const counts = { pending: 0, accepted: 0, rejected: 0, paid: 0 };
     quotes.forEach(quote => {
       if (quote.status === 'accepted') counts.accepted++;
       else if (quote.status === 'rejected') counts.rejected++;
+      else if (quote.status === 'paid') counts.paid++;
       else counts.pending++;
     });
     return counts;
@@ -164,15 +165,22 @@ export default function Quotes() {
       return 'bg-red-50 hover:bg-red-100 border-red-200';
     }
     
+
+    // If 1 is paid, gray
+    if (counts.paid >= 1) {
+      return 'bg-gray-50 hover:bg-gray-100 border-gray-200';
+    }
     // If at least 1 quote accepted, green
-    if (counts.accepted >= 1) {
+    else if (counts.accepted >= 1) {
       return 'bg-green-50 hover:bg-green-100 border-green-200';
     }
     
     // If all quotes are rejected, red
-    if (counts.rejected === totalQuotes) {
+    else if (counts.rejected === totalQuotes) {
       return 'bg-red-50 hover:bg-red-100 border-red-200';
     }
+
+
     
     // Otherwise (pending quotes exist), yellow
     return 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200';
@@ -199,6 +207,8 @@ export default function Quotes() {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'paid':
+        return 'bg-gray-400 text-black border-black-200';
       default:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
@@ -562,21 +572,29 @@ export default function Quotes() {
                           </Badge>
                         )}
                         <div className="flex items-center gap-2 text-sm text-gray-500 ml-auto">
-                          <span>{taskQuotes.length} total</span>
-                          {statusCounts.pending > 0 && (
+                          
+                          {statusCounts.paid === 0 && (
+                            <span>{taskQuotes.length} total</span>
+                          )}
+                          {statusCounts.pending > 0 && statusCounts.paid === 0 &&  (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
                               {statusCounts.pending} pending
                             </Badge>
                           )}
-                          {statusCounts.accepted > 0 && (
+                          {statusCounts.accepted > 0 && statusCounts.paid === 0 && (
                             <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
                               {statusCounts.accepted} accepted
                             </Badge>
                           )}
-                          {statusCounts.rejected > 0 && (
+                          {statusCounts.rejected > 0 && statusCounts.paid === 0 &&  (
                             <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
                               {statusCounts.rejected} rejected
                             </Badge>
+                          )}
+                           {statusCounts.paid > 0 && (
+                              <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                                paid
+                              </Badge>
                           )}
                         </div>
                       </div>

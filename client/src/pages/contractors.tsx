@@ -15,7 +15,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContractorSchema, type InsertContractor, type Contractor, type Quote, type Task, type Document } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit, Trash2, Minus } from "lucide-react";
+import { Plus, Building, Receipt, Hammer, FileText, ChevronDown, ChevronUp, Star, Phone, Mail, Globe, MessageSquare, Edit, Trash2, Minus, Calendar } from "lucide-react";
+
 import { useToast } from "@/hooks/use-toast";
 
 export default function Contractors() {
@@ -47,6 +48,10 @@ export default function Contractors() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ["/api/properties"],
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["/api/events"],
   });
 
   const createMutation = useMutation({
@@ -290,6 +295,10 @@ export default function Contractors() {
 
   const getContractorTasks = (contractorId: number): Task[] => {
     return tasks.filter((task: any) => task.contractorId === contractorId);
+  };
+
+  const getContractorEvents = (contractorId: number): Event[] => {
+    return events.filter((event: any) => event.contractorId === contractorId);
   };
 
   const getContractorDocuments = (contractorId: number): Document[] => {
@@ -835,6 +844,7 @@ export default function Contractors() {
                       const contractorQuotes = getContractorQuotes(selectedContractor.id);
                       const contractorDocuments = getContractorDocuments(selectedContractor.id);
                       const contractorTasks = getContractorTasks(selectedContractor.id);
+                      const contractorEvents = getContractorEvents(selectedContractor.id);
                       const totalQuoteValue = getTotalQuoteValue(contractorQuotes);
 
                       return (
@@ -853,6 +863,10 @@ export default function Contractors() {
                               <p className="text-2xl font-bold text-green-600">{contractorTasks.length}</p>
                               <p className="text-sm text-muted-foreground">Tasks</p>
                             </div>
+                            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                              <p className="text-2xl font-bold text-yellow-600">{contractorEvents.length}</p>
+                              <p className="text-sm text-muted-foreground">Events</p>
+                            </div>
                             <div className="text-center p-4 bg-orange-50 rounded-lg">
                               <p className="text-2xl font-bold text-orange-600">{contractorDocuments.length}</p>
                               <p className="text-sm text-muted-foreground">Documents</p>
@@ -870,6 +884,11 @@ export default function Contractors() {
                                 <Hammer className="h-4 w-4" />
                                 Tasks ({contractorTasks.length})
                               </TabsTrigger>
+                              <TabsTrigger value="events" className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Events ({contractorEvents.length})
+                              </TabsTrigger>
+                            
                               <TabsTrigger value="documents" className="flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
                                 Documents ({contractorDocuments.length})
@@ -915,6 +934,48 @@ export default function Contractors() {
                                 </div>
                               )}
                             </TabsContent>
+
+
+                            <TabsContent value="events" className="space-y-4">
+                              {contractorEvents.length === 0 ? (
+                                <div className="text-center p-12">
+                                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                  <h3 className="text-lg font-medium mb-2">No events</h3>
+                                  <p className="text-muted-foreground">This contractor has no scheduled events.</p>
+                                </div>
+                              ) : (
+                                <div className="grid gap-4">
+                                  {contractorEvents.map((event) => (
+                                    <Card key={event.id}>
+                                      <CardContent className="p-4">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <h4 className="font-medium">{event.title}</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                              Property: {getPropertyName(event.propertyId)}
+                                            </p>
+                                            {event.title && (
+                                              <p className="text-sm text-muted-foreground mt-1">{event.title}</p>
+                                            )}
+                                            <div className="flex items-center gap-4 mt-2">
+                                              <Badge variant={event.status === "completed" ? "default" : "secondary"}>
+                                                {event.status}
+                                              </Badge>
+                                              {event.date && (
+                                                <span className="text-sm text-muted-foreground">
+                                                  Date: {new Date(event.date).toLocaleDateString()}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              )}  
+                            </TabsContent>
+
 
                             <TabsContent value="tasks" className="space-y-4">
                               {contractorTasks.length === 0 ? (

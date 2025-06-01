@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
-import type { Expense, InsertExpense, Property, Task, Job, Contractor, Quote, contacts, Contact} from "@shared/schema";
+import type { Expense, InsertExpense, Property, Task, Job, Contractor, Quote, Contact} from "@shared/schema";
 import { insertExpenseSchema } from "@shared/schema";
 
 const formSchema = z.object({
