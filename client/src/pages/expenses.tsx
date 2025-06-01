@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils";
-import type { Expense, InsertExpense, Property, Task, Job, Contractor, Quote } from "@shared/schema";
+import type { Expense, InsertExpense, Property, Task, Job, Contractor, Quote, contacts, Contact} from "@shared/schema";
 import { insertExpenseSchema } from "@shared/schema";
 
 const formSchema = z.object({
@@ -32,8 +32,9 @@ const formSchema = z.object({
   description: z.string().optional(),
   paymentMethod: z.string().optional(),
   supplier: z.string().optional(),
-  contractorType: z.enum(["existing", "custom"]).optional(),
+  contractorType: z.enum(["existing","contact","custom"]).optional(),
   contractorId: z.string().optional(),
+  ContactId: z.string().optional(),
   customSupplier: z.string().optional(),
   receiptNumber: z.string().optional(),
   vatAmount: z.string().optional(),
@@ -86,6 +87,10 @@ export default function Expenses() {
 
   const { data: contractors = [] } = useQuery<Contractor[]>({
     queryKey: ["/api/contractors"],
+  });
+
+  const { data: contacts = [ ] } = useQuery<Contact[]>({
+    queryKey: ["/api/contacts"],
   });
 
   const { data: quotes = [] } = useQuery<Quote[]>({
@@ -228,9 +233,16 @@ export default function Expenses() {
       amount: data.amount,
       category: data.category,
       paymentMethod: data.paymentMethod || null,
-      supplier: data.contractorType === "existing" && data.contractorId 
-        ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
-        : data.customSupplier || null,
+     supplier: data.contractorType === "existing" && data.contractorId
+    ? contractors.find(c => c.id === parseInt(data.contractorId!))?.name || null
+    : data.contractorType === "contact" && data.ContactId
+    ? contacts.find(c => c.id === parseInt(data.ContactId!))?.name || null
+    : data.customSupplier || null,
+
+
+
+
+
       receiptNumber: data.receiptNumber || null,
       vatAmount: data.vatAmount || null,
       taxDeductible: data.taxDeductible || false,
@@ -594,6 +606,9 @@ export default function Expenses() {
                   )}
                 />
 
+
+
+
                 <FormField
                   control={form.control}
                   name="date"
@@ -679,13 +694,16 @@ export default function Expenses() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="existing">Existing Contractor</SelectItem>
+                        <SelectItem value="contact">Existing Contact</SelectItem>
                         <SelectItem value="custom">Custom Supplier</SelectItem>
+
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
 
               {form.watch("contractorType") === "existing" && (
                 <FormField
@@ -701,6 +719,7 @@ export default function Expenses() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {/* Show existing contractors */}
                           {contractors.map((contractor) => (
                             <SelectItem key={contractor.id} value={contractor.id.toString()}>
                               {contractor.name}
@@ -713,6 +732,42 @@ export default function Expenses() {
                   )}
                 />
               )}
+
+              {form.watch("contractorType") === "contact" && (
+                <FormField
+                  control={form.control}
+                  name="ContactId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ASsign contact</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose contact" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+
+                          {/* Show contacts */}
+                          {contacts.map((Contact) => (
+                            <SelectItem key={Contact.id} value={Contact.id.toString()}>
+                              {Contact.name}
+                            </SelectItem>
+                          ))}
+
+                        </SelectContent>
+
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+
+
+
+
 
               {form.watch("contractorType") === "custom" && (
                 <FormField

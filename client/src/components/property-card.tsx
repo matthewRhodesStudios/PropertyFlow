@@ -22,7 +22,7 @@ export default function PropertyCard({ property, onEdit, onClick }: PropertyCard
 
   return (
     <div 
-      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className="border border-gray-200 rounded-1g p-4 hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onClick?.(property)}
     >
       <div className="flex items-start justify-between">

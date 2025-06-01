@@ -375,7 +375,7 @@ export default function Properties() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Property</DialogTitle>
+              <DialogTitle>Edit Property Details</DialogTitle>
             </DialogHeader>
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
@@ -533,7 +533,7 @@ export default function Properties() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={updatePropertyMutation.isPending}>
-                    {updatePropertyMutation.isPending ? "Updating..." : "Update Property"}
+                    {updatePropertyMutation.isPending ? "Updates" : "Save these bad bois"}
                   </Button>
                 </div>
               </form>
